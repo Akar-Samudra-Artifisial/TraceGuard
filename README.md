@@ -10,7 +10,8 @@ Spike-stage scaffold. All surfaces read the fictional CardioSense dataset in `sr
 | `src/adapters/source.ts` | Data source. Currently the demo fixture; Forge SQL comes later |
 | `src/surfaces/actions.ts` | Rovo actions, also exposed as MCP tools through `rovo:mcp` |
 | `src/surfaces/ui.ts`, `events.ts` | UI resolver and background stubs |
-| `static/*/build` | Placeholder Custom UI pages |
+| `ui/src/` | Custom UI views (React): project page, issue panel, admin page, Confluence macro |
+| `static/*/build` | Build output of `npm run build:ui` (git-ignored; required before `forge deploy`) |
 | `prompts/prompt.md` | Audit Prep Agent prompt |
 
 ## Local checks
@@ -19,6 +20,7 @@ Spike-stage scaffold. All surfaces read the fictional CardioSense dataset in `sr
 npm install
 npm test
 npm run typecheck
+npm run build:ui   # builds static/{matrix,chain,setup,macro}/build
 ```
 
 ## Deploy for spikes B (MCP) and D (Rovo agent)
@@ -30,6 +32,7 @@ npm install -g @forge/cli
 forge login
 forge register          # replaces the placeholder app.id in manifest.yml
 forge lint
+npm run build:ui
 forge deploy
 forge install           # choose Jira, then your developer site (org admin needed for read:graph scopes)
 ```

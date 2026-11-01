@@ -80,3 +80,31 @@ describe('Rovo / MCP actions (demo data)', () => {
     });
   });
 });
+
+describe('UI data (demo data)', () => {
+  it('getOverview returns one row per requirement with its gaps and hazards', async () => {
+    const { getOverview } = await import('../../src/surfaces/actions');
+    const r = data<{
+      release: string;
+      coverage: { percent: number };
+      rows: { requirementId: string; status: string; hazards: { id: string }[]; gaps: { code: string }[] }[];
+      untracedChanges: { artifactKey: string }[];
+    }>(await getOverview({}));
+    expect(r.release).toBe('2.3');
+    expect(r.coverage.percent).toBe(38);
+    expect(r.rows).toHaveLength(8);
+    const req112 = r.rows.find((x) => x.requirementId === 'REQ-112')!;
+    expect(req112.hazards.map((h) => h.id)).toEqual(['HAZ-07']);
+    expect(req112.gaps.map((g) => g.code)).toEqual(['G5']);
+    expect(r.untracedChanges.map((g) => g.artifactKey)).toEqual(['PR-63']);
+  });
+
+  it('getSetupInfo reports the demo source and safety-critical paths', async () => {
+    const { getSetupInfo } = await import('../../src/surfaces/actions');
+    const r = data<{ dataSource: string; safetyCriticalPaths: string[]; counts: { requirements: number } }>(
+      await getSetupInfo({}),
+    );
+    expect(r).toMatchObject({ dataSource: 'demo', counts: { requirements: 8 } });
+    expect(r.safetyCriticalPaths).toContain('src/dosing/**');
+  });
+});
