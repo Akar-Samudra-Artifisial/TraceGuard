@@ -6,6 +6,8 @@ export interface Settings {
   projectKey: string;
   defaultRepo: string;
   safetyCriticalPaths: string[];
+  /** Space for evidence packs; the first global space when unset. */
+  confluenceSpaceKey?: string;
 }
 
 const SETTINGS = 'settings';

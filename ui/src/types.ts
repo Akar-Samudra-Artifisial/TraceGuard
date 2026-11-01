@@ -43,10 +43,31 @@ export interface SetupInfo {
   simulated: boolean;
 }
 
+export interface PublishResult {
+  summary: string;
+  pageTitle: string;
+  pageUrl: string;
+  space: string;
+}
+
 export interface SeedResult {
   summary: string;
   projectKey: string;
   created: Record<'requirements' | 'hazards' | 'workItems' | 'testCases' | 'links', number>;
+}
+
+export interface TestCandidates {
+  summary: string;
+  requirement: { id: string; key: string };
+  release: string;
+  candidates: { key: string; title: string; verifies: string[]; inRelease: boolean; lastRun?: { result: 'passed' | 'failed'; at: string } }[];
+}
+
+export interface LinkResult {
+  summary: string;
+  requirementId: string;
+  testKey: string;
+  created: boolean;
 }
 
 export type TraceView = TraceResult & { summary: string; simulated: boolean };

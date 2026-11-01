@@ -14,7 +14,9 @@ Reads traceability live from the Jira project `CSM`. Until that project exists, 
 | Edited after approval (G6) | Summary/description change in the changelog after `approvedAt` |
 | Pull requests | Simulated history in Forge KVS until the Bitbucket app reports real ones |
 
-**Load demo data** (Jira admin → Apps → TraceGuard setup) creates all of the above as project `CSM`.
+**Load demo data** (Jira admin → Apps → TraceGuard setup) creates all of the above as project `CSM`, plus a Confluence space `CSM` when Confluence is installed.
+
+**Evidence pack**: `generate_evidence_pack` (Rovo/MCP) or *Publish evidence pack* on the project page creates a new Confluence page per run (summary, open gaps, matrix). Target space: `space` input → setting → space whose key equals the Jira project key → first global space.
 
 ## Layout
 

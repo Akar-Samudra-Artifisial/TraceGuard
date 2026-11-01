@@ -1124,3 +1124,39 @@ select {
   border-bottom: 0;
   padding-bottom: 0;
 }
+
+/* --- quick fix: link test case --- */
+.fix {
+  margin-top: 6px;
+}
+
+.fix--open {
+  display: grid;
+  gap: 6px;
+}
+
+.fix__select {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* --- project page: publish evidence pack --- */
+.publish {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.publish__done {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tg-muted);
+}
+
+.publish__done a {
+  color: var(--tg-accent);
+  font-weight: 600;
+}

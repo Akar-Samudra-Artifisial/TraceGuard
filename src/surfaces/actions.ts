@@ -1,5 +1,8 @@
 import * as core from '../core';
+import { ConfluenceError, createPage, findSpace } from '../adapters/confluence';
 import { loadTraceSource, type TraceSource } from '../adapters/source';
+import { getSettings } from '../adapters/store';
+import { evidencePageTitle, renderEvidencePage, type EvidencePageContext } from './evidence-page';
 
 /** Payload Forge passes to an `action` function: the declared inputs plus an optional context object. */
 export type ActionPayload = Record<string, unknown> & {
@@ -49,12 +52,19 @@ function releaseOf(src: TraceSource, payload: ActionPayload): string {
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low'] as const;
 
-async function run(payload: ActionPayload, body: (src: TraceSource) => ActionResult): Promise<ActionResult> {
+async function run(
+  payload: ActionPayload,
+  body: (src: TraceSource) => ActionResult | Promise<ActionResult>,
+): Promise<ActionResult> {
   try {
     const src = await loadTraceSource();
-    return body(src);
+    return await body(src);
   } catch (err) {
     if (err instanceof InputError || err instanceof core.UnknownReleaseError) return { error: err.message };
+    if (err instanceof ConfluenceError) {
+      console.error('TraceGuard Confluence call failed', { moduleKey: payload.context?.moduleKey, err });
+      return { error: `Confluence refused the request (${err.message}). Check that Confluence is installed and the app can create pages in the space.` };
+    }
     console.error('TraceGuard action failed', { moduleKey: payload.context?.moduleKey, err });
     return { error: 'TraceGuard could not complete this request. Check the app logs.' };
   }
@@ -131,15 +141,51 @@ export const findRequirementsForPath = (payload: ActionPayload) =>
     return { summary: impactSummary(impact), repo, ...impact, simulated: src.simulated };
   });
 
+const SPACE_KEY = /^~?[A-Za-z0-9]{1,255}$/;
+
+/** Builds the evidence pack and publishes it as a new Confluence page (one page per run, never overwritten). */
 export const generateEvidencePack = (payload: ActionPayload) =>
-  run(payload, (src) => {
+  run(payload, async (src) => {
     const release = releaseOf(src, payload);
+    const requestedSpace = optionalString(payload, 'space');
+    if (requestedSpace && !SPACE_KEY.test(requestedSpace)) throw new InputError('Input "space" must be a Confluence space key.');
+    const spaceKey = requestedSpace ?? (await getSettings())?.confluenceSpaceKey;
+
+    // Explicit or configured space; otherwise a space named like the Jira project (the demo creates CSM),
+    // otherwise the first global space.
+    let { space, siteUrl } = await findSpace(spaceKey ?? src.projectKey);
+    if (!space && !spaceKey) ({ space, siteUrl } = await findSpace());
+    if (!space) {
+      throw new InputError(
+        spaceKey
+          ? `Confluence space "${spaceKey}" was not found or the app cannot see it.`
+          : 'No Confluence space found. Create a space or pass the "space" input.',
+      );
+    }
+
     const pack = core.buildEvidencePack(src.snapshot, src.config, release);
+    const ctx: EvidencePageContext = {
+      projectKey: src.projectKey,
+      siteUrl,
+      simulated: src.simulated,
+      simulatedPullRequests: src.snapshot.pullRequests.some((pr) => pr.simulated),
+    };
+    const page = await createPage(
+      space.id,
+      evidencePageTitle(pack, ctx),
+      renderEvidencePage(pack, src.snapshot, ctx),
+      evidencePageTitle(pack, ctx, true),
+    );
     return {
-      summary: `Evidence pack for ${release}: ${pack.coverage.traced}/${pack.coverage.total} requirements fully traced (${pack.coverage.percent}%), ${pack.gaps.length} open gap(s). Confluence page creation is not enabled yet.`,
-      ...pack,
-      pageUrl: null,
-      simulated: true,
+      summary: `Published the evidence pack for ${release} to Confluence space ${space.key}: ${pack.coverage.traced}/${pack.coverage.total} requirements fully traced (${pack.coverage.percent}%), ${pack.gaps.length} open gap(s). ${page.url}`,
+      release,
+      generatedAt: pack.generatedAt,
+      coverage: pack.coverage,
+      gaps: pack.gaps,
+      pageTitle: page.title,
+      pageUrl: page.url,
+      space: space.key,
+      simulated: src.simulated,
     };
   });
 

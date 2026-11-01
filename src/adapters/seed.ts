@@ -1,7 +1,8 @@
 import { route } from '@forge/api';
 import type { PullRequest } from '../core/types';
 import { DEMO_REPO, demoConfig, demoSnapshot } from '../demo/cardiosense';
-import { getProject, jira, searchProjectIssues, type JiraProject } from './jira';
+import { ensureSpace } from './confluence';
+import { createLink as link, getProject, jira, searchProjectIssues, type JiraProject } from './jira';
 import { ISSUE_TYPES, LINK_TYPES, PROPERTY_KEY } from './jira-map';
 import { DEFAULT_PROJECT_KEY } from './source';
 import { saveSettings, savePullRequests } from './store';
@@ -29,6 +30,8 @@ export interface SeedResult {
   projectKey: string;
   created: { requirements: number; hazards: number; workItems: number; testCases: number; links: number };
   keyMap: Record<string, string>;
+  /** Confluence space for evidence packs, or null when Confluence is not available. */
+  confluenceSpace: string | null;
 }
 
 const doc = (text: string) => ({
@@ -167,10 +170,6 @@ async function createIssues(projectId: string, issues: NewIssue[]): Promise<Reco
   return keys;
 }
 
-async function link(type: string, from: string, to: string): Promise<void> {
-  // "from <outward> to", e.g. CSM-5 implements CSM-2.
-  await jira('POST', route`/rest/api/3/issueLink`, { type: { name: type }, inwardIssue: { key: from }, outwardIssue: { key: to } });
-}
 
 /** Runs promises a few at a time so Jira does not rate-limit the seed. */
 async function inBatches<T>(items: T[], size: number, fn: (item: T) => Promise<void>): Promise<void> {
@@ -268,10 +267,22 @@ export async function seedDemoProject(accountId: string): Promise<SeedResult> {
     simulated: true,
   }));
   await savePullRequests(pullRequests);
+  // Best effort: Confluence is optional for TraceGuard, so the Jira demo still works without it.
+  let confluenceSpace: string | null = null;
+  try {
+    confluenceSpace = await ensureSpace(
+      project.key,
+      `${PROJECT_NAME} Quality`,
+      'Traceability evidence packs published by TraceGuard. Demo data.',
+    );
+  } catch (err) {
+    console.warn('TraceGuard demo: Confluence space not created', err);
+  }
   await saveSettings({
     projectKey: project.key,
     defaultRepo: DEMO_REPO,
     safetyCriticalPaths: demoConfig.safetyCriticalPaths,
+    ...(confluenceSpace ? { confluenceSpaceKey: confluenceSpace } : {}),
   });
 
   return {
@@ -284,5 +295,6 @@ export async function seedDemoProject(accountId: string): Promise<SeedResult> {
       links: links.length,
     },
     keyMap,
+    confluenceSpace,
   };
 }
