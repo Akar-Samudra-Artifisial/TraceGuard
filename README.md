@@ -44,3 +44,7 @@ Spike B:
 1. Atlassian Administration → Apps → Sites → your site → Connected apps → TraceGuard → turn on the MCP tools.
 2. Add the remote MCP server `https://mcp.atlassian.com/forge/<app-uuid>` to Claude Code or Cursor (UUID = part of `app.id` after `ari:cloud:ecosystem::app/`).
 3. Ask the agent to change `src/dosing/limits.ts`. Expected from `check_change_impact`: REQ-112 (class C, HAZ-07), re-run CSM-T12 and CSM-T13.
+
+## License
+
+[MIT](LICENSE)
