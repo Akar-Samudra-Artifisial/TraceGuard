@@ -22,7 +22,11 @@ const SETUP_MODULE = 'traceguard-setup';
 function payloadOf(payload: unknown, context: ResolverContext, keys: string[]): ActionPayload {
   const input = (payload ?? {}) as Record<string, unknown>;
   const picked: ActionPayload = Object.fromEntries(keys.filter((k) => k in input).map((k) => [k, input[k]]));
-  picked.context = { cloudId: context.cloudId, moduleKey: context.moduleKey, jira: { issueKey: context.extension?.issue?.key } };
+  picked.context = {
+    cloudId: context.cloudId,
+    moduleKey: context.moduleKey,
+    jira: { issueKey: context.extension?.issue?.key },
+  };
   return picked;
 }
 
@@ -34,11 +38,14 @@ async function isJiraAdmin(accountId: string): Promise<boolean> {
   return (res.globalPermissions ?? []).includes('ADMINISTER');
 }
 
-resolver.define('getOverview', ({ payload, context }) => getOverview(payloadOf(payload, context, ['release'])));
-resolver.define('getSetup', ({ payload, context }) => getSetupInfo(payloadOf(payload, context, [])));
-resolver.define('getTrace', ({ payload, context }) => getTrace(payloadOf(payload, context, ['key', 'release'])));
+/** The caller, taken from the Forge resolver context (never from the browser payload). */
+const caller = (context: ResolverContext) => ({ accountId: context.accountId });
+
+resolver.define('getOverview', ({ payload, context }) => getOverview(payloadOf(payload, context, ['release']), caller(context)));
+resolver.define('getSetup', ({ payload, context }) => getSetupInfo(payloadOf(payload, context, []), caller(context)));
+resolver.define('getTrace', ({ payload, context }) => getTrace(payloadOf(payload, context, ['key', 'release']), caller(context)));
 resolver.define('checkImpact', ({ payload, context }) =>
-  checkChangeImpact(payloadOf(payload, context, ['files', 'repo'])),
+  checkChangeImpact(payloadOf(payload, context, ['files', 'repo']), caller(context)),
 );
 
 /** Creates the CardioSense demo project. Only from the admin page, and only for Jira admins. */
@@ -83,7 +90,9 @@ async function quickFix<T>(context: unknown, body: (ctx: ResolverContext) => Pro
 }
 
 resolver.define('getTestCandidates', ({ payload, context }) =>
-  quickFix(context, () => getTestCandidates(textInput(payload, 'requirementId')!, textInput(payload, 'release', false))),
+  quickFix(context, (ctx) =>
+    getTestCandidates(ctx.accountId!, textInput(payload, 'requirementId')!, textInput(payload, 'release', false)),
+  ),
 );
 
 /** Quick fix for G2: links a Test Case to the requirement with "verifies". */
@@ -95,7 +104,7 @@ resolver.define('linkTestCase', ({ payload, context }) =>
 resolver.define('publishEvidencePack', ({ payload, context }) => {
   const ctx = context as ResolverContext;
   if (ctx.moduleKey !== 'traceguard-matrix' || !ctx.accountId) return { error: 'Publish from the TraceGuard project page.' };
-  return generateEvidencePack(payloadOf(payload, ctx, ['release']));
+  return generateEvidencePack(payloadOf(payload, ctx, ['release']), caller(ctx));
 });
 
 /**

@@ -19,7 +19,8 @@ vi.mock('../../src/adapters/confluence', async (original) => ({
   findSpace: async (key?: string) =>
     key === 'NOPE'
       ? { siteUrl: 'https://acme.atlassian.net' }
-      : { space: { id: '42', key: key ?? 'QA', name: 'Quality' }, siteUrl: 'https://acme.atlassian.net' },
+      : { space: { id: '42', key: key ?? 'QA', name: 'Quality', homepageId: '7' }, siteUrl: 'https://acme.atlassian.net' },
+  userCanReadContent: async (accountId: string) => accountId === 'acc-1',
   createPage: async (spaceId: string, title: string, body: string) => {
     confluence.pages.push({ spaceId, title, body });
     return { id: '9', title, url: 'https://acme.atlassian.net/wiki/spaces/QA/pages/9', siteUrl: 'https://acme.atlassian.net' };
@@ -91,7 +92,7 @@ describe('Rovo / MCP actions (demo data)', () => {
 
   it('generate_evidence_pack publishes a Confluence page', async () => {
     const r = data<{ pageUrl: string; space: string; summary: string; coverage: { percent: number } }>(
-      await generateEvidencePack({ release: '2.3' }),
+      await generateEvidencePack({ release: '2.3' }, { principal: { accountId: 'acc-1' } }),
     );
     expect(r).toMatchObject({ pageUrl: 'https://acme.atlassian.net/wiki/spaces/QA/pages/9', space: 'CSM', coverage: { percent: 38 } });
     expect(r.summary).toContain('3/8 requirements fully traced (38%), 6 open gap(s)');
@@ -99,6 +100,15 @@ describe('Rovo / MCP actions (demo data)', () => {
     expect(page.spaceId).toBe('42');
     expect(page.title).toMatch(/^TraceGuard evidence pack · release 2\.3 · \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
     expect(page.body).toContain('sample dataset');
+  });
+
+  it('generate_evidence_pack needs a caller who can view the space', async () => {
+    expect(await generateEvidencePack({ release: '2.3' })).toEqual({
+      error: 'TraceGuard could not identify you, so it cannot check your Jira permissions.',
+    });
+    expect(await generateEvidencePack({ release: '2.3' }, { principal: { accountId: 'acc-9' } })).toEqual({
+      error: 'You cannot view Confluence space CSM, so TraceGuard will not publish there.',
+    });
   });
 
   it('generate_evidence_pack validates the space', async () => {

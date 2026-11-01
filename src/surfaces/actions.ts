@@ -2,12 +2,13 @@ import * as core from '../core';
 import { ConfluenceError, createPage, findSpace } from '../adapters/confluence';
 import { loadTraceSource, type TraceSource } from '../adapters/source';
 import { getBitbucketSecret, getSettings } from '../adapters/store';
+import { AccessError, accountOf, assertCanBrowse, assertCanUseSpace, type InvocationContext } from './access';
 import { AssignError, createGapTask, findOpenGap, taskSummary } from './assign';
 import { evidencePageTitle, renderEvidencePage, type EvidencePageContext } from './evidence-page';
 
 /** Payload Forge passes to an `action` function: the declared inputs plus an optional context object. */
 export type ActionPayload = Record<string, unknown> & {
-  context?: { cloudId?: string; moduleKey?: string; accountId?: string; jira?: { issueKey?: string | number } };
+  context?: { cloudId?: string; moduleKey?: string; jira?: { issueKey?: string | number } };
 };
 
 export type ActionResult = Record<string, unknown> & { summary: string } | { error: string };
@@ -53,14 +54,25 @@ function releaseOf(src: TraceSource, payload: ActionPayload): string {
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low'] as const;
 
+/**
+ * Loads the trace data, checks that the caller may browse the Jira project (live data only), then runs
+ * the action. The caller comes from the Forge invocation context, or from the resolver for UI calls.
+ */
 async function run(
   payload: ActionPayload,
-  body: (src: TraceSource) => ActionResult | Promise<ActionResult>,
+  context: InvocationContext,
+  body: (src: TraceSource, accountId: string | undefined) => ActionResult | Promise<ActionResult>,
 ): Promise<ActionResult> {
   try {
+    const accountId = accountOf(context);
     const src = await loadTraceSource();
-    return await body(src);
+    await assertCanBrowse(src, accountId);
+    return await body(src, accountId);
   } catch (err) {
+    if (err instanceof AccessError) {
+      console.warn('TraceGuard access denied', { moduleKey: payload.context?.moduleKey, reason: err.message });
+      return { error: err.message };
+    }
     if (err instanceof InputError || err instanceof AssignError || err instanceof core.UnknownReleaseError) return { error: err.message };
     if (err instanceof ConfluenceError) {
       console.error('TraceGuard Confluence call failed', { moduleKey: payload.context?.moduleKey, err });
@@ -81,8 +93,8 @@ function gapSummary(release: string, gaps: core.Gap[]): string {
   return `Release ${release} has ${gaps.length} open gap${gaps.length === 1 ? '' : 's'}: ${parts.join(', ')}.`;
 }
 
-export const listGaps = (payload: ActionPayload) =>
-  run(payload, (src) => {
+export const listGaps = (payload: ActionPayload, context?: InvocationContext) =>
+  run(payload, context, (src) => {
     const release = releaseOf(src, payload);
     const severity = optionalString(payload, 'severity')?.toLowerCase();
     if (severity && !SEVERITIES.includes(severity as core.Severity)) {
@@ -99,8 +111,8 @@ export const listGaps = (payload: ActionPayload) =>
     };
   });
 
-export const getTrace = (payload: ActionPayload) =>
-  run(payload, (src) => {
+export const getTrace = (payload: ActionPayload, context?: InvocationContext) =>
+  run(payload, context, (src) => {
     const issueFromContext = payload.context?.jira?.issueKey;
     const key = optionalString(payload, 'key') ?? (typeof issueFromContext === 'string' ? issueFromContext : undefined);
     if (!key) throw new InputError('Input "key" is required (requirement ID or Jira issue key).');
@@ -128,15 +140,15 @@ function impactSummary(impact: core.ChangeImpact): string {
   return `Affects ${reqs}. Tests to re-run: ${tests}.${impact.requiresTracedIssue ? ' A traced Jira issue is required.' : ''}`;
 }
 
-export const checkChangeImpact = (payload: ActionPayload) =>
-  run(payload, (src) => {
+export const checkChangeImpact = (payload: ActionPayload, context?: InvocationContext) =>
+  run(payload, context, (src) => {
     const repo = optionalString(payload, 'repo') ?? src.defaultRepo;
     const impact = core.checkChangeImpact(src.snapshot, src.config, repo, fileList(payload, 'files'));
     return { summary: impactSummary(impact), repo, ...impact, simulated: src.simulated };
   });
 
-export const findRequirementsForPath = (payload: ActionPayload) =>
-  run(payload, (src) => {
+export const findRequirementsForPath = (payload: ActionPayload, context?: InvocationContext) =>
+  run(payload, context, (src) => {
     const repo = optionalString(payload, 'repo') ?? src.defaultRepo;
     const impact = core.findRequirementsForPath(src.snapshot, src.config, repo, requiredString(payload, 'path'));
     return { summary: impactSummary(impact), repo, ...impact, simulated: src.simulated };
@@ -145,8 +157,8 @@ export const findRequirementsForPath = (payload: ActionPayload) =>
 const SPACE_KEY = /^~?[A-Za-z0-9]{1,255}$/;
 
 /** Builds the evidence pack and publishes it as a new Confluence page (one page per run, never overwritten). */
-export const generateEvidencePack = (payload: ActionPayload) =>
-  run(payload, async (src) => {
+export const generateEvidencePack = (payload: ActionPayload, context?: InvocationContext) =>
+  run(payload, context, async (src, accountId) => {
     const release = releaseOf(src, payload);
     const requestedSpace = optionalString(payload, 'space');
     if (requestedSpace && !SPACE_KEY.test(requestedSpace)) throw new InputError('Input "space" must be a Confluence space key.');
@@ -163,6 +175,7 @@ export const generateEvidencePack = (payload: ActionPayload) =>
           : 'No Confluence space found. Create a space or pass the "space" input.',
       );
     }
+    await assertCanUseSpace(space, accountId);
 
     const pack = core.buildEvidencePack(src.snapshot, src.config, release);
     const ctx: EvidencePageContext = {
@@ -190,15 +203,12 @@ export const generateEvidencePack = (payload: ActionPayload) =>
     };
   });
 
-/** Forge passes the invocation context (with the calling user) as the second handler argument. */
-export type InvocationContext = { principal?: { accountId?: string }; accountId?: string } | undefined;
-
 /**
  * Creates a Jira task for one open gap and assigns it. With the built-in sample (no live Jira data)
  * it only previews the task, marked simulated.
  */
 export const assignGap = (payload: ActionPayload, context?: InvocationContext) =>
-  run(payload, async (src) => {
+  run(payload, context, async (src, accountId) => {
     const gapId = requiredString(payload, 'gapId');
     const assignee = optionalString(payload, 'assignee');
     if (src.simulated) {
@@ -213,13 +223,12 @@ export const assignGap = (payload: ActionPayload, context?: InvocationContext) =
         simulated: true,
       };
     }
-    const accountId = context?.principal?.accountId ?? context?.accountId ?? payload.context?.accountId;
     return { ...(await createGapTask(src, accountId, gapId, assignee)), simulated: false };
   });
 
 /** Data behind the Jira project page and Confluence macro: one row per requirement plus all open gaps. */
-export const getOverview = (payload: ActionPayload) =>
-  run(payload, (src) => {
+export const getOverview = (payload: ActionPayload, context?: InvocationContext) =>
+  run(payload, context, (src) => {
     const release = releaseOf(src, payload);
     const pack = core.buildEvidencePack(src.snapshot, src.config, release);
     const hazards = Object.fromEntries(src.snapshot.hazards.map((h) => [h.id, h]));
@@ -242,8 +251,8 @@ export const getOverview = (payload: ActionPayload) =>
   });
 
 /** Data behind the Jira admin page: what TraceGuard reads and how it classifies code. */
-export const getSetupInfo = (payload: ActionPayload) =>
-  run(payload, async (src) => {
+export const getSetupInfo = (payload: ActionPayload, context?: InvocationContext) =>
+  run(payload, context, async (src) => {
     const s = src.snapshot;
     const bitbucketConnected = Boolean(await getBitbucketSecret());
     return {
