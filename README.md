@@ -12,11 +12,35 @@ Reads traceability live from the Jira project `CSM`. Until that project exists, 
 | Test case | Issue type `Test Case`; property `{ lastRun: { result, at, build } }`; link `Verifies` |
 | Release | Fix version (released = signed off) |
 | Edited after approval (G6) | Summary/description change in the changelog after `approvedAt` |
-| Pull requests | Simulated history in Forge KVS until the Bitbucket app reports real ones |
+| Pull requests | Forge KVS: simulated seed history plus merged PRs reported by the Bitbucket app |
 
 **Load demo data** (Jira admin → Apps → TraceGuard setup) creates all of the above as project `CSM`, plus a Confluence space `CSM` when Confluence is installed.
 
 **Evidence pack**: `generate_evidence_pack` (Rovo/MCP) or *Publish evidence pack* on the project page creates a new Confluence page per run (summary, open gaps, matrix). Target space: `space` input → setting → space whose key equals the Jira project key → first global space.
+
+## Bitbucket merge check (`bitbucket-app/`)
+
+A second Forge app, **TraceGuard for Bitbucket**, adds the merge check *TraceGuard trace check* (`on-code-pushed`, `on-merge`). For each pull request it collects changed files and Jira issue keys (title, source branch, commits) and asks this app's `trace-lookup` web trigger, signed with HMAC-SHA256 (`x-traceguard-signature: t=<unix>,v1=<hex>`). A change to safety-critical code passes only when a referenced issue traces to every affected requirement. The check fails closed when Jira cannot be reached. Merged PRs that pass are stored as real trace history.
+
+Connect:
+
+1. Jira: Apps → TraceGuard setup → **Connect Bitbucket** → *Create connection*. Copy the URL and the secret (shown once).
+2. Bitbucket: install the app, Workspace settings → **TraceGuard**, paste both values (workspace admin only; a signed test request is sent before saving).
+3. Repository settings → Merge checks: enable *TraceGuard trace check* and mark it Required.
+
+Optional `.traceguard.yml` on the destination branch:
+
+```yaml
+repo: cardiosense-firmware   # name in TraceGuard (default: Bitbucket slug)
+safety-critical:             # overrides the globs set in Jira
+  - src/dosing/**
+  - src/alarms/**
+```
+
+```bash
+cd bitbucket-app && npm install && npm test && npm run typecheck
+forge deploy -e production && forge install   # choose Bitbucket and the workspace
+```
 
 ## Layout
 
@@ -26,6 +50,8 @@ Reads traceability live from the Jira project `CSM`. Until that project exists, 
 | `src/adapters/` | Jira REST reader (`jira.ts`, `jira-map.ts`), demo seed (`seed.ts`), KVS settings (`store.ts`), source with fixture fallback (`source.ts`) |
 | `src/surfaces/actions.ts` | Rovo actions, also exposed as MCP tools through `rovo:mcp` |
 | `src/surfaces/ui.ts`, `events.ts` | UI resolver and background stubs |
+| `src/surfaces/webtrigger.ts` | `trace-lookup` web trigger for the Bitbucket merge check |
+| `bitbucket-app/` | TraceGuard for Bitbucket (merge check + workspace settings page) |
 | `ui/src/` | Custom UI views (React): project page, issue panel, admin page, Confluence macro |
 | `static/*/build` | Build output of `npm run build:ui` (git-ignored; required before `forge deploy`) |
 | `prompts/prompt.md` | Audit Prep Agent prompt |

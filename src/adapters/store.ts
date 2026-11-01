@@ -22,3 +22,18 @@ export async function getPullRequests(): Promise<PullRequest[]> {
 }
 
 export const savePullRequests = (value: PullRequest[]) => kvs.set(PULL_REQUESTS, value);
+
+const MAX_PULL_REQUESTS = 300;
+
+/** Adds or replaces a pull request reported by the Bitbucket app (matched on repo + id). */
+export async function upsertPullRequest(pr: PullRequest): Promise<void> {
+  const all = await getPullRequests();
+  const rest = all.filter((p) => !(p.repo === pr.repo && p.id === pr.id));
+  await savePullRequests([...rest, pr].slice(-MAX_PULL_REQUESTS));
+}
+
+const BITBUCKET_SECRET = 'bitbucket-connection-secret';
+
+/** Shared secret for requests from the TraceGuard Bitbucket app (Forge KVS secret storage). */
+export const getBitbucketSecret = () => kvs.getSecret<string>(BITBUCKET_SECRET);
+export const setBitbucketSecret = (value: string) => kvs.setSecret(BITBUCKET_SECRET, value);

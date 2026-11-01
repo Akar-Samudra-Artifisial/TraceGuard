@@ -1160,3 +1160,19 @@ select {
   color: var(--tg-accent);
   font-weight: 600;
 }
+
+/* --- setup: bitbucket connection --- */
+.btn--link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--ds-link, var(--tg-accent));
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.secret {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}

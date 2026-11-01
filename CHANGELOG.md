@@ -18,9 +18,14 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 - Tombol "Link test case" di panel Trace chain menautkan Test Case ke requirement dengan link `Verifies` sehingga celah G2 tertutup. App memeriksa dulu izin Browse dan Link work items milik user di proyek tersebut, lalu me-refresh tampilan issue Jira.
 - `generate_evidence_pack` (Rovo dan MCP) serta tombol "Publish evidence pack" di halaman proyek kini membuat halaman Confluence sungguhan: ringkasan coverage, daftar celah, dan matriks traceability dengan tautan ke issue Jira. Setiap run membuat halaman baru (snapshot). Space dipilih dari input `space`, setting, space dengan key yang sama dengan proyek Jira, atau space global pertama.
 - "Load demo data" juga membuat space Confluence `CSM` untuk evidence pack bila Confluence terpasang.
+- App kedua "TraceGuard for Bitbucket" (`bitbucket-app/`): merge check "TraceGuard trace check" menolak pull request yang mengubah kode safety-critical tanpa issue Jira yang tertaut ke requirement terdampak. Pesannya menyebut requirement, hazard, contoh issue, dan test yang harus diulang. Glob safety-critical bisa ditimpa per repo lewat `.traceguard.yml`.
+- Halaman Workspace settings → TraceGuard di Bitbucket (khusus admin workspace) untuk menempelkan URL dan secret koneksi; koneksi diuji dengan request bertanda tangan sebelum disimpan.
+- Panel "Connect Bitbucket" di TraceGuard setup (khusus admin Jira) membuat atau merotasi secret koneksi dan menampilkan URL web trigger. Secret hanya tampil sekali.
+- Web trigger `trace-lookup` di app Jira menjawab merge check Bitbucket (HMAC-SHA256, toleransi 5 menit). Pull request yang lolos dan di-merge dicatat sebagai riwayat trace asli.
 - Tombol "Load demo data" di TraceGuard setup (khusus admin Jira) membuat proyek CardioSense `CSM` sebagai issue Jira asli, lengkap dengan satu contoh celah G1–G6. Riwayat pull request disimpan sebagai data simulasi.
 
 ### Changed
+- App Jira kini memakai web trigger dinamis, sehingga tidak lagi memenuhi syarat Runs on Atlassian. Admin site harus menyetujui upgrade versi mayor.
 - Scope baru `read:space:confluence`, `write:page:confluence`, dan `write:confluence-space`. Admin site harus menyetujui upgrade versi mayor.
 - Input `release` pada `generate_evidence_pack` kini opsional (default: rilis berikutnya yang belum dirilis).
 - App sekarang meminta scope `manage:jira-project`, `manage:jira-configuration`, dan `storage:app`. Admin site harus menyetujui upgrade versi mayor.

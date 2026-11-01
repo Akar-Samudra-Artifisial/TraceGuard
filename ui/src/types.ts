@@ -38,7 +38,10 @@ export interface SetupInfo {
   defaultRepo: string;
   safetyCriticalPaths: string[];
   releases: Release[];
-  counts: Record<'requirements' | 'hazards' | 'workItems' | 'testCases' | 'pullRequests', number>;
+  counts: Record<'requirements' | 'hazards' | 'workItems' | 'testCases' | 'pullRequests', number> & {
+    bitbucketPullRequests: number;
+  };
+  bitbucketConnected: boolean;
   requirementPaths: { id: string; safetyClass: SafetyClass; paths: string[] }[];
   simulated: boolean;
 }
@@ -48,6 +51,12 @@ export interface PublishResult {
   pageTitle: string;
   pageUrl: string;
   space: string;
+}
+
+export interface BitbucketConnection {
+  summary: string;
+  url: string;
+  secret: string;
 }
 
 export interface SeedResult {
