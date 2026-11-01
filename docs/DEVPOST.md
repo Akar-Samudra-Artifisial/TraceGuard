@@ -25,7 +25,7 @@ TraceGuard reports evidence; it does not certify compliance.
 - Two Atlassian Forge apps: one for Jira + Confluence, one for Bitbucket (a Forge app cannot span Bitbucket and Jira). Both are TypeScript on the Node.js 24 runtime.
 - Traceability lives in Jira itself: issue types Requirement, Hazard and Test Case, link types Implements / Verifies / Mitigates, a `traceguard` issue property for attributes such as safety class and last test run, and fix versions as releases. No external database.
 - A pure core (`src/core`: gap engine, change impact, glob matching, merge-check decision) is shared by every surface and covered by unit tests (96 tests in the Jira app, 12 in the Bitbucket app).
-- Surfaces: Custom UI (React) for the project page, issue panel, admin page and macro; Rovo agent + six actions; Rovo MCP module exposing five of those actions; Jira triggers and a scheduled trigger.
+- Surfaces: Custom UI (React) for the project page, issue panel, admin page and macro; Rovo agent + six actions; Rovo MCP module exposing five of those actions; a web trigger for the Bitbucket app.
 - The Bitbucket app reads the pull request diffstat, title, branch and commits plus an optional `.traceguard.yml`, then calls a web trigger in the Jira app. Requests are signed with HMAC-SHA256 and a shared secret that a Jira admin creates in TraceGuard setup and a Bitbucket workspace admin pastes into workspace settings. The check fails closed.
 - Data is read as the app, but every surface first checks the calling user's own permissions (Browse projects in Jira, read access to the Confluence space), so TraceGuard never shows a user more than Jira or Confluence would.
 

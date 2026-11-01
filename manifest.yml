@@ -39,23 +39,6 @@ modules:
       resolver:
         function: ui-resolver
 
-  # --- Event & background ---
-  trigger:
-    - key: on-work-change
-      function: on-event
-      events:
-        - avi:jira:created:issue
-        - avi:jira:updated:issue
-        - avi:confluence:updated:page
-  consumer:
-    - key: reindex-consumer
-      queue: reindex
-      function: reindex
-  scheduledTrigger:
-    - key: nightly-sweep-schedule
-      function: nightly-sweep
-      interval: day
-
   # --- Rovo ---
   rovo:agent:
     - key: audit-prep-agent
@@ -223,12 +206,6 @@ modules:
       handler: index.generateEvidencePack
     - key: assign-gap
       handler: index.assignGap
-    - key: on-event
-      handler: index.onEvent
-    - key: reindex
-      handler: index.reindex
-    - key: nightly-sweep
-      handler: index.nightlySweep
 
 resources:
   - key: matrix-ui
