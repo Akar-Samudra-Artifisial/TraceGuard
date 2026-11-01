@@ -1,0 +1,42 @@
+app:
+  id: ari:cloud:ecosystem::app/346c4e15-82c1-453c-babc-216f7b5aa73c
+  runtime:
+    name: nodejs24.x
+
+modules:
+  bitbucket:mergeCheck:
+    - key: traceguard-trace-check
+      function: merge-check
+      name: TraceGuard trace check
+      description: Blocks changes to safety-critical code that do not reference a Jira
+        issue traced to the affected requirement.
+      triggers:
+        - on-code-pushed # result visible as soon as the PR is opened or updated
+        - on-merge # last guard; merged PRs are recorded as trace history in Jira
+  bitbucket:workspaceSettingsMenuPage:
+    - key: traceguard-settings
+      title: TraceGuard
+      resource: settings
+      render: native
+      resolver:
+        function: settings-resolver
+  function:
+    - key: merge-check
+      handler: index.mergeCheck
+    - key: settings-resolver
+      handler: index.settingsResolver
+
+resources:
+  - key: settings
+    path: src/frontend/settings.tsx
+
+permissions:
+  scopes:
+    - read:pullrequest:bitbucket
+    - read:repository:bitbucket
+    - read:workspace:bitbucket
+    - storage:app
+  external:
+    fetch:
+      backend:
+        - address: "*.webtrigger.atlassian.app"

@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { mount } from './mount';
 import { appIdFrom, call, getContext, useRemote } from './bridge';
 import { ClassBadge, ErrorState, Key, Loading, Masthead, Shell } from './components';
-import type { SeedResult, SetupInfo } from './types';
+import type { BitbucketConnection, SeedResult, SetupInfo } from './types';
 
-const COUNT_LABEL: Record<keyof SetupInfo['counts'], string> = {
+const COUNT_LABEL: Record<Exclude<keyof SetupInfo['counts'], 'bitbucketPullRequests'>, string> = {
   requirements: 'Requirements',
   hazards: 'Hazards',
   workItems: 'Work items',
@@ -71,6 +71,67 @@ function LoadDemo({ reason, onDone }: { reason: string | null; onDone: () => voi
   );
 }
 
+function ConnectBitbucket({ connected, reported }: { connected: boolean; reported: number }) {
+  const [state, setState] = useState<{ busy: boolean; result?: BitbucketConnection; error?: string }>({ busy: false });
+  const [confirming, setConfirming] = useState(false);
+  const live = connected || Boolean(state.result);
+  const run = async () => {
+    if (live && !confirming) return setConfirming(true);
+    setConfirming(false);
+    setState({ busy: true });
+    try {
+      setState({ busy: false, result: await call<BitbucketConnection>('connectBitbucket') });
+    } catch (e) {
+      setState({ busy: false, error: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  return (
+    <section className="panel" aria-labelledby="bitbucket-title">
+      <div className="panel__bar">
+        <h2 id="bitbucket-title" className="panel__title">
+          Connect Bitbucket (merge check)
+        </h2>
+        <span className={live ? 'status status--ok' : 'status status--demo'}>
+          {live ? `Connected · ${reported} merged PR${reported === 1 ? '' : 's'} reported` : 'Not connected'}
+        </span>
+      </div>
+      <p className="panel__lede">
+        The TraceGuard for Bitbucket app blocks pull requests that change safety-critical code without a Jira issue
+        traced to the affected requirement. It asks this Jira site through a signed web trigger.
+      </p>
+      <ol className="howto">
+        <li>Install TraceGuard for Bitbucket in your workspace and turn on Custom merge checks.</li>
+        <li>
+          Create the connection here, then paste the URL and secret into Bitbucket → Workspace settings → TraceGuard.
+          <div>
+            <button type="button" className="btn" onClick={() => void run()} disabled={state.busy}>
+              {state.busy ? 'Creating…' : confirming ? 'Yes, rotate now' : live ? 'Rotate secret' : 'Create connection'}
+            </button>
+            {confirming && (
+              <span className="muted">
+                {' '}
+                The Bitbucket app stops passing checks until you paste the new secret.{' '}
+                <button type="button" className="btn btn--link" onClick={() => setConfirming(false)}>
+                  Cancel
+                </button>
+              </span>
+            )}
+          </div>
+        </li>
+        <li>Enable “TraceGuard trace check” for the repository and mark it Required.</li>
+      </ol>
+      {state.error && <p className="state state--error">{state.error}</p>}
+      {state.result && (
+        <div className="secret">
+          <p className="muted">Copy the secret now. It is not shown again.</p>
+          <CopyField value={state.result.url} />
+          <CopyField value={state.result.secret} />
+        </div>
+      )}
+    </section>
+  );
+}
+
 function App() {
   const setup = useRemote<SetupInfo>('getSetup', {}, []);
   const [appId, setAppId] = useState<string>();
@@ -98,7 +159,7 @@ function App() {
               </span>
             </div>
             <dl className="stats">
-              {(Object.keys(COUNT_LABEL) as (keyof SetupInfo['counts'])[]).map((k) => (
+              {(Object.keys(COUNT_LABEL) as (keyof typeof COUNT_LABEL)[]).map((k) => (
                 <div key={k} className="stat">
                   <dt>{COUNT_LABEL[k]}</dt>
                   <dd>{data.counts[k]}</dd>
@@ -153,6 +214,8 @@ function App() {
               </table>
             </section>
           </div>
+
+          <ConnectBitbucket connected={data.bitbucketConnected} reported={data.counts.bitbucketPullRequests} />
 
           <section className="panel" aria-labelledby="mcp-title">
             <h2 id="mcp-title" className="panel__title">

@@ -1,7 +1,7 @@
 import * as core from '../core';
 import { ConfluenceError, createPage, findSpace } from '../adapters/confluence';
 import { loadTraceSource, type TraceSource } from '../adapters/source';
-import { getSettings } from '../adapters/store';
+import { getBitbucketSecret, getSettings } from '../adapters/store';
 import { evidencePageTitle, renderEvidencePage, type EvidencePageContext } from './evidence-page';
 
 /** Payload Forge passes to an `action` function: the declared inputs plus an optional context object. */
@@ -237,8 +237,9 @@ export const getOverview = (payload: ActionPayload) =>
 
 /** Data behind the Jira admin page: what TraceGuard reads and how it classifies code. */
 export const getSetupInfo = (payload: ActionPayload) =>
-  run(payload, (src) => {
+  run(payload, async (src) => {
     const s = src.snapshot;
+    const bitbucketConnected = Boolean(await getBitbucketSecret());
     return {
       summary: `TraceGuard reads ${s.requirements.length} requirements across ${s.releases.length} releases.`,
       dataSource: src.simulated ? 'demo' : 'live',
@@ -253,7 +254,9 @@ export const getSetupInfo = (payload: ActionPayload) =>
         workItems: s.workItems.length,
         testCases: s.testCases.length,
         pullRequests: s.pullRequests.length,
+        bitbucketPullRequests: s.pullRequests.filter((pr) => !pr.simulated).length,
       },
+      bitbucketConnected,
       requirementPaths: s.requirements.map((r) => ({ id: r.id, safetyClass: r.safetyClass, paths: r.paths })),
       simulated: src.simulated,
     };

@@ -9,6 +9,7 @@ vi.mock('../../src/adapters/jira', () => ({
 vi.mock('../../src/adapters/store', () => ({
   getSettings: async () => undefined,
   getPullRequests: async () => [],
+  getBitbucketSecret: async () => undefined,
 }));
 const confluence = vi.hoisted(() => ({
   pages: [] as { spaceId: string; title: string; body: string }[],

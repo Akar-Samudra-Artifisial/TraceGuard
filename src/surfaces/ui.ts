@@ -1,7 +1,9 @@
 import Resolver from '@forge/resolver';
-import { route } from '@forge/api';
+import { route, webTrigger } from '@forge/api';
 import { jira } from '../adapters/jira';
 import { seedDemoProject } from '../adapters/seed';
+import { newSecret } from '../adapters/signature';
+import { setBitbucketSecret } from '../adapters/store';
 import { getTestCandidates, linkTestCase, QuickFixError } from './quickfix';
 import { checkChangeImpact, generateEvidencePack, getOverview, getSetupInfo, getTrace, type ActionPayload } from './actions';
 
@@ -94,6 +96,25 @@ resolver.define('publishEvidencePack', ({ payload, context }) => {
   const ctx = context as ResolverContext;
   if (ctx.moduleKey !== 'traceguard-matrix' || !ctx.accountId) return { error: 'Publish from the TraceGuard project page.' };
   return generateEvidencePack(payloadOf(payload, ctx, ['release']));
+});
+
+/**
+ * Creates (or rotates) the shared secret for the TraceGuard Bitbucket app and returns it with the
+ * web trigger URL. The secret is shown once; rotating it disconnects the old Bitbucket configuration.
+ */
+resolver.define('connectBitbucket', async ({ context }) => {
+  const ctx = context as ResolverContext;
+  if (ctx.moduleKey !== SETUP_MODULE || !ctx.accountId) return { error: 'Bitbucket can only be connected from TraceGuard setup.' };
+  try {
+    if (!(await isJiraAdmin(ctx.accountId))) return { error: 'Only Jira administrators can connect Bitbucket.' };
+    const url = await webTrigger.getUrl('trace-lookup');
+    const secret = newSecret();
+    await setBitbucketSecret(secret);
+    return { summary: 'Paste both values into TraceGuard for Bitbucket (workspace settings).', url, secret };
+  } catch (err) {
+    console.error('TraceGuard connectBitbucket failed', err);
+    return { error: 'Could not create the Bitbucket connection. Check the app logs.' };
+  }
 });
 
 export const handler = resolver.getDefinitions();

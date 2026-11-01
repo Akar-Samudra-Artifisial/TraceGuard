@@ -204,7 +204,15 @@ modules:
         - list_gaps
         - generate_evidence_pack
 
+  webtrigger:
+    - key: trace-lookup             # called by the TraceGuard Bitbucket app; HMAC-signed with a shared secret
+      function: trace-lookup-fn
+      urlFormat: v2
+      response:
+        type: dynamic
   function:
+    - key: trace-lookup-fn
+      handler: index.traceLookup
     - key: ui-resolver
       handler: index.uiResolver
     - key: list-gaps
