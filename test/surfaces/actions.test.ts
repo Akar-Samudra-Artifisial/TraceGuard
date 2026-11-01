@@ -1,4 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// No Forge runtime in tests: Jira has no CSM project, so every action falls back to the fixture.
+vi.mock('../../src/adapters/jira', () => ({
+  getProject: async () => undefined,
+  getVersions: async () => [],
+  searchProjectIssues: async () => [],
+}));
+vi.mock('../../src/adapters/store', () => ({
+  getSettings: async () => undefined,
+  getPullRequests: async () => [],
+}));
 import {
   assignGap,
   checkChangeImpact,

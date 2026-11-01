@@ -67,7 +67,7 @@ function App() {
               ))}
             </p>
           )}
-          <SimulatedNote show={data.simulated} />
+          <SimulatedNote show={data.simulated} pullRequests={data.simulatedPullRequests} />
         </>
       )}
     </Shell>

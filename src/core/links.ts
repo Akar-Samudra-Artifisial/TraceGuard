@@ -24,7 +24,7 @@ export function defaultRelease(s: TraceSnapshot): Release | undefined {
 }
 
 export function findRequirement(s: TraceSnapshot, id: string): Requirement | undefined {
-  return s.requirements.find((r) => eq(r.id, id));
+  return s.requirements.find((r) => eq(r.id, id) || (r.key !== undefined && eq(r.key, id)));
 }
 
 export function workItemsFor(s: TraceSnapshot, reqId: string, release?: string): WorkItem[] {

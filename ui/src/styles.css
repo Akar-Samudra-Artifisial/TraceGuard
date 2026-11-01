@@ -1112,3 +1112,15 @@ select {
     flex-direction: column;
   }
 }
+
+/* --- setup: load demo --- */
+.seed {
+  padding: 12px;
+  border: 1px dashed var(--tg-warn);
+  border-radius: var(--tg-radius);
+}
+
+.seed > .panel__title {
+  border-bottom: 0;
+  padding-bottom: 0;
+}

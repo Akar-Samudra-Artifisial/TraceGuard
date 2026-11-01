@@ -41,13 +41,22 @@ export function Mark() {
   );
 }
 
-export function SimulatedNote({ show }: { show: boolean }) {
-  if (!show) return null;
+export function SimulatedNote({ show, pullRequests = false }: { show: boolean; pullRequests?: boolean }) {
+  if (show) {
+    return (
+      <p className="note" role="note">
+        <span className="note__tag">Sample data</span>
+        Showing the built-in CardioSense sample (fictional class C ECG monitor). A Jira admin can turn it into real
+        Jira issues with Load demo data in TraceGuard setup.
+      </p>
+    );
+  }
+  if (!pullRequests) return null;
   return (
     <p className="note" role="note">
-      <span className="note__tag">Demo data</span>
-      Showing the built-in CardioSense dataset (fictional class C ECG monitor). Live Jira, Confluence and Bitbucket
-      indexing replaces it in a later version.
+      <span className="note__tag">Live Jira</span>
+      Requirements, hazards, stories and tests are read live from Jira. Pull requests are simulated history until the
+      TraceGuard Bitbucket app is installed.
     </p>
   );
 }

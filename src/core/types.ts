@@ -4,6 +4,8 @@ export type GapCode = 'G1' | 'G2' | 'G3' | 'G4' | 'G5' | 'G6';
 
 export interface Requirement {
   id: string;
+  /** Jira issue key when the requirement is a Jira issue. */
+  key?: string;
   title: string;
   safetyClass: SafetyClass;
   status: 'draft' | 'approved';
@@ -18,6 +20,7 @@ export interface Requirement {
 
 export interface Hazard {
   id: string;
+  key?: string;
   title: string;
   severity: 'catastrophic' | 'critical' | 'serious' | 'minor';
 }

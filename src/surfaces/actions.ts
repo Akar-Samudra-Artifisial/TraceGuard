@@ -183,6 +183,8 @@ export const getOverview = (payload: ActionPayload) =>
       })),
       gaps: pack.gaps,
       untracedChanges: pack.gaps.filter((g) => !g.requirementId),
+      projectKey: src.projectKey ?? null,
+      simulatedPullRequests: src.snapshot.pullRequests.some((pr) => pr.simulated),
       simulated: src.simulated,
     };
   });
@@ -194,6 +196,8 @@ export const getSetupInfo = (payload: ActionPayload) =>
     return {
       summary: `TraceGuard reads ${s.requirements.length} requirements across ${s.releases.length} releases.`,
       dataSource: src.simulated ? 'demo' : 'live',
+      projectKey: src.projectKey ?? null,
+      fallbackReason: src.fallbackReason ?? null,
       defaultRepo: src.defaultRepo,
       safetyCriticalPaths: src.config.safetyCriticalPaths,
       releases: s.releases,
