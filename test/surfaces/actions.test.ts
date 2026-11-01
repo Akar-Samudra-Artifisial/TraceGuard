@@ -148,6 +148,7 @@ describe('UI data (demo data)', () => {
     expect(req112.hazards.map((h) => h.id)).toEqual(['HAZ-07']);
     expect(req112.gaps.map((g) => g.code)).toEqual(['G5']);
     expect(r.untracedChanges.map((g) => g.artifactKey)).toEqual(['PR-63']);
+    expect(data<{ bitbucketConnected: boolean }>(await getOverview({})).bitbucketConnected).toBe(false);
   });
 
   it('getSetupInfo reports the demo source and safety-critical paths', async () => {

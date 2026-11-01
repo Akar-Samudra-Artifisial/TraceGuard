@@ -27,6 +27,7 @@ export interface Overview {
   untracedChanges: Gap[];
   projectKey: string | null;
   simulatedPullRequests: boolean;
+  bitbucketConnected: boolean;
   simulated: boolean;
 }
 
