@@ -53,7 +53,7 @@ function LoadDemo({ reason, onDone }: { reason: string | null; onDone: () => voi
       <p className="panel__lede">
         {reason ? `${reason} ` : ''}Creates the fictional CardioSense project <Key>CSM</Key> as real Jira issues:
         8 requirements, 3 hazards, 7 stories, 9 test cases, releases 2.2 and 2.3, and one example of every gap
-        G1–G6. Pull requests are stored as simulated history. Takes about 20 seconds.
+        G1–G6, plus a Confluence space CSM for evidence packs when Confluence is installed. Pull requests are stored as simulated history. Takes about 20 seconds.
       </p>
       <div>
         <button type="button" className="btn btn--primary" onClick={() => void run()} disabled={state.busy}>

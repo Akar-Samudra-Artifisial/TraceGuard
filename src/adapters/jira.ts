@@ -77,3 +77,21 @@ export async function searchProjectIssues(projectKey: string): Promise<JiraIssue
   } while (nextPageToken && issues.length < MAX_ISSUES);
   return issues;
 }
+
+/** Creates "from <outward verb> to", e.g. CSM-26 verifies CSM-6 (Jira's inward/outward fields read the other way). */
+export async function createLink(type: string, from: string, to: string): Promise<void> {
+  await jira('POST', route`/rest/api/3/issueLink`, { type: { name: type }, inwardIssue: { key: from }, outwardIssue: { key: to } });
+}
+
+/** True when the user holds every listed project permission in the project. */
+export async function userHasProjectPermissions(accountId: string, projectId: string, permissions: string[]): Promise<boolean> {
+  const res = await jira<{ projectPermissions?: { permission: string; projects?: number[] }[] }>(
+    'POST',
+    route`/rest/api/3/permissions/check`,
+    { accountId, projectPermissions: [{ permissions, projects: [Number(projectId)] }] },
+  );
+  const granted = new Set(
+    (res.projectPermissions ?? []).filter((p) => (p.projects ?? []).includes(Number(projectId))).map((p) => p.permission),
+  );
+  return permissions.every((p) => granted.has(p));
+}

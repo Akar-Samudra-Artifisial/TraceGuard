@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { mount } from './mount';
-import { useRemote } from './bridge';
+import { call, useRemote } from './bridge';
 import {
   ClassBadge,
   CoverageMeter,
@@ -15,7 +15,7 @@ import {
   SimulatedNote,
   TraceRail,
 } from './components';
-import type { MatrixRow, Overview, Severity } from './types';
+import type { MatrixRow, Overview, PublishResult, Severity } from './types';
 
 type Filter = 'all' | 'gap' | 'traced';
 
@@ -54,6 +54,34 @@ function MatrixTable({ rows }: { rows: MatrixRow[] }) {
         ))}
       </tbody>
     </table>
+  );
+}
+
+function PublishPack({ release }: { release: string }) {
+  const [state, setState] = useState<{ busy: boolean; result?: PublishResult; error?: string }>({ busy: false });
+  const publish = async () => {
+    setState({ busy: true });
+    try {
+      setState({ busy: false, result: await call<PublishResult>('publishEvidencePack', { release }) });
+    } catch (e) {
+      setState({ busy: false, error: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  return (
+    <div className="publish">
+      <button type="button" className="btn" onClick={() => void publish()} disabled={state.busy}>
+        {state.busy ? 'Publishing…' : `Publish evidence pack ${release}`}
+      </button>
+      {state.error && <p className="state state--error">{state.error}</p>}
+      {state.result && (
+        <p className="publish__done">
+          Published to space {state.result.space}:{' '}
+          <a href={state.result.pageUrl} target="_blank" rel="noreferrer">
+            {state.result.pageTitle}
+          </a>
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -104,6 +132,7 @@ function App() {
             <div className="hero__side">
               <p className="hero__summary">{data.summary}</p>
               <SeverityCounts gaps={data.gaps} />
+              <PublishPack key={data.release} release={data.release} />
             </div>
           </section>
 

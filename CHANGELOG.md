@@ -15,8 +15,13 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 - Halaman admin "TraceGuard setup": ringkasan sumber data, path safety-critical, peta requirement → kode, dan langkah menyambungkan agen coding lewat MCP (URL server bisa disalin).
 - Macro Confluence "Traceability matrix" kini menampilkan coverage dan matriks rilis, bukan lagi teks placeholder.
 - Data dibaca langsung dari proyek Jira `CSM`: issue type Requirement, Hazard, dan Test Case, link Implements/Verifies/Mitigates, fix version sebagai rilis, serta issue property `traceguard` (safety class, approval, path kode, hasil test terakhir). Selama proyek itu belum ada, semua tampilan dan tool tetap memakai sampel bawaan.
+- Tombol "Link test case" di panel Trace chain menautkan Test Case ke requirement dengan link `Verifies` sehingga celah G2 tertutup. App memeriksa dulu izin Browse dan Link work items milik user di proyek tersebut, lalu me-refresh tampilan issue Jira.
+- `generate_evidence_pack` (Rovo dan MCP) serta tombol "Publish evidence pack" di halaman proyek kini membuat halaman Confluence sungguhan: ringkasan coverage, daftar celah, dan matriks traceability dengan tautan ke issue Jira. Setiap run membuat halaman baru (snapshot). Space dipilih dari input `space`, setting, space dengan key yang sama dengan proyek Jira, atau space global pertama.
+- "Load demo data" juga membuat space Confluence `CSM` untuk evidence pack bila Confluence terpasang.
 - Tombol "Load demo data" di TraceGuard setup (khusus admin Jira) membuat proyek CardioSense `CSM` sebagai issue Jira asli, lengkap dengan satu contoh celah G1–G6. Riwayat pull request disimpan sebagai data simulasi.
 
 ### Changed
+- Scope baru `read:space:confluence`, `write:page:confluence`, dan `write:confluence-space`. Admin site harus menyetujui upgrade versi mayor.
+- Input `release` pada `generate_evidence_pack` kini opsional (default: rilis berikutnya yang belum dirilis).
 - App sekarang meminta scope `manage:jira-project`, `manage:jira-configuration`, dan `storage:app`. Admin site harus menyetujui upgrade versi mayor.
 - Panel "Trace chain" bisa dibuka dari issue requirement itu sendiri (dicari lewat issue key maupun ID REQ).

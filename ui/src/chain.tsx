@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { view } from '@forge/bridge';
 import { mount } from './mount';
-import { getContext, useRemote } from './bridge';
+import { call, getContext, useRemote } from './bridge';
 import { ClassBadge, ErrorState, GapList, Key, Loading, Shell, SimulatedNote } from './components';
-import type { TraceView } from './types';
+import type { LinkResult, TestCandidates, TraceView } from './types';
 
 type Chain = TraceView['chains'][number];
 
@@ -20,7 +21,95 @@ function Step({ label, state, children }: { label: string; state: 'ok' | 'gap' |
   );
 }
 
-function ChainCard({ chain, release }: { chain: Chain; release: string }) {
+function LinkTest({ requirementId, release, prominent, onLinked }: {
+  requirementId: string;
+  release: string;
+  prominent: boolean;
+  onLinked: (summary: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [list, setList] = useState<TestCandidates>();
+  const [choice, setChoice] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const start = async () => {
+    setOpen(true);
+    setError(undefined);
+    try {
+      const res = await call<TestCandidates>('getTestCandidates', { requirementId, release });
+      setList(res);
+      setChoice(res.candidates[0]?.key ?? '');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+  const link = async () => {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const res = await call<LinkResult>('linkTestCase', { requirementId, testKey: choice });
+      setOpen(false);
+      onLinked(res.summary);
+      // Ask Jira to refresh the issue view so its own "Linked work items" section shows the new link.
+      if (res.created) view.refresh().catch(() => undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button type="button" className={prominent ? 'btn btn--primary fix' : 'btn fix'} onClick={() => void start()}>
+        Link test case
+      </button>
+    );
+  }
+  return (
+    <div className="fix fix--open">
+      {!list && !error && <p className="muted">Loading test cases…</p>}
+      {list && list.candidates.length === 0 && <p className="muted">No other Test Case issues in this project.</p>}
+      {list && list.candidates.length > 0 && (
+        <div className="lookup__row">
+          <label className="visually-hidden" htmlFor={`fix-${requirementId}`}>
+            Test case that verifies {requirementId}
+          </label>
+          <select
+            id={`fix-${requirementId}`}
+            className="select--bare fix__select"
+            value={choice}
+            onChange={(e) => setChoice(e.target.value)}
+          >
+            {list.candidates.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.key} · {t.title}
+                {t.lastRun ? ` (${t.lastRun.result})` : ' (not run)'}
+                {t.verifies.length ? ` · verifies ${t.verifies.join(', ')}` : ' · unlinked'}
+                {t.inRelease ? '' : ` · not in ${list.release}`}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="btn btn--primary" disabled={busy || !choice} onClick={() => void link()}>
+            {busy ? 'Linking…' : 'Link'}
+          </button>
+          <button type="button" className="btn" disabled={busy} onClick={() => setOpen(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
+      {error && <p className="state state--error">{error}</p>}
+    </div>
+  );
+}
+
+function ChainCard({ chain, release, live, onChanged }: {
+  chain: Chain;
+  release: string;
+  live: boolean;
+  onChanged: (summary: string) => void;
+}) {
   const { requirement: req, gaps } = chain;
   const has = (...codes: string[]) => gaps.some((g) => codes.includes(g.code));
   return (
@@ -73,6 +162,9 @@ function ChainCard({ chain, release }: { chain: Chain; release: string }) {
                 </p>
               ))
             : 'No test case'}
+          {live && (
+            <LinkTest requirementId={req.id} release={release} prominent={has('G2')} onLinked={onChanged} />
+          )}
         </Step>
         <Step label="Releases" state={chain.releases.length ? 'ok' : 'empty'}>
           {chain.releases.join(', ') || 'Not scheduled'}
@@ -92,6 +184,7 @@ function App() {
   const [issueKey, setIssueKey] = useState<string>();
   const [key, setKey] = useState<string>();
   const [draft, setDraft] = useState('');
+  const [notice, setNotice] = useState<string>();
   useEffect(() => {
     void getContext().then((c) => setIssueKey(c.extension?.issue?.key));
   }, []);
@@ -107,6 +200,11 @@ function App() {
       {data && (
         <>
           <SimulatedNote show={data.simulated} />
+          {notice && (
+            <p className="empty" role="status">
+              {notice}
+            </p>
+          )}
           {data.chains.length === 0 ? (
             <div className="untraced">
               <p className="untraced__title">
@@ -117,7 +215,18 @@ function App() {
               </p>
             </div>
           ) : (
-            data.chains.map((c) => <ChainCard key={c.requirement.id} chain={c} release={data.release} />)
+            data.chains.map((c) => (
+              <ChainCard
+                key={c.requirement.id}
+                chain={c}
+                release={data.release}
+                live={!data.simulated}
+                onChanged={(summary) => {
+                  setNotice(summary);
+                  trace.reload();
+                }}
+              />
+            ))
           )}
           <form
             className="lookup"

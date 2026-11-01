@@ -10,6 +10,20 @@ vi.mock('../../src/adapters/store', () => ({
   getSettings: async () => undefined,
   getPullRequests: async () => [],
 }));
+const confluence = vi.hoisted(() => ({
+  pages: [] as { spaceId: string; title: string; body: string }[],
+}));
+vi.mock('../../src/adapters/confluence', async (original) => ({
+  ...(await original<typeof import('../../src/adapters/confluence')>()),
+  findSpace: async (key?: string) =>
+    key === 'NOPE'
+      ? { siteUrl: 'https://acme.atlassian.net' }
+      : { space: { id: '42', key: key ?? 'QA', name: 'Quality' }, siteUrl: 'https://acme.atlassian.net' },
+  createPage: async (spaceId: string, title: string, body: string) => {
+    confluence.pages.push({ spaceId, title, body });
+    return { id: '9', title, url: 'https://acme.atlassian.net/wiki/spaces/QA/pages/9', siteUrl: 'https://acme.atlassian.net' };
+  },
+}));
 import {
   assignGap,
   checkChangeImpact,
@@ -74,10 +88,25 @@ describe('Rovo / MCP actions (demo data)', () => {
     expect(r.requirements.map((x) => x.id)).toEqual(['REQ-112']);
   });
 
-  it('generate_evidence_pack is simulated and does not publish', async () => {
-    const r = data<{ pageUrl: unknown; rows: unknown[] }>(await generateEvidencePack({ release: '2.3' }));
-    expect(r.pageUrl).toBeNull();
-    expect(r.rows).toHaveLength(8);
+  it('generate_evidence_pack publishes a Confluence page', async () => {
+    const r = data<{ pageUrl: string; space: string; summary: string; coverage: { percent: number } }>(
+      await generateEvidencePack({ release: '2.3' }),
+    );
+    expect(r).toMatchObject({ pageUrl: 'https://acme.atlassian.net/wiki/spaces/QA/pages/9', space: 'CSM', coverage: { percent: 38 } });
+    expect(r.summary).toContain('3/8 requirements fully traced (38%), 6 open gap(s)');
+    const page = confluence.pages.at(-1)!;
+    expect(page.spaceId).toBe('42');
+    expect(page.title).toMatch(/^TraceGuard evidence pack · release 2\.3 · \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
+    expect(page.body).toContain('sample dataset');
+  });
+
+  it('generate_evidence_pack validates the space', async () => {
+    expect(await generateEvidencePack({ space: 'NOPE' })).toEqual({
+      error: 'Confluence space "NOPE" was not found or the app cannot see it.',
+    });
+    expect(await generateEvidencePack({ space: 'bad key!' })).toEqual({
+      error: 'Input "space" must be a Confluence space key.',
+    });
   });
 
   it('assign_gap previews the task and defaults to the gap owner', async () => {

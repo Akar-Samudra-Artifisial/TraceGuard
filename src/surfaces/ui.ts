@@ -2,7 +2,8 @@ import Resolver from '@forge/resolver';
 import { route } from '@forge/api';
 import { jira } from '../adapters/jira';
 import { seedDemoProject } from '../adapters/seed';
-import { checkChangeImpact, getOverview, getSetupInfo, getTrace, type ActionPayload } from './actions';
+import { getTestCandidates, linkTestCase, QuickFixError } from './quickfix';
+import { checkChangeImpact, generateEvidencePack, getOverview, getSetupInfo, getTrace, type ActionPayload } from './actions';
 
 const resolver = new Resolver();
 
@@ -50,6 +51,49 @@ resolver.define('seedDemo', async ({ context }) => {
     console.error('TraceGuard demo seed failed', err);
     return { error: err instanceof Error ? err.message : 'Loading demo data failed. Check the app logs.' };
   }
+});
+
+const QUICK_FIX_MODULES = new Set(['traceguard-chain', 'traceguard-matrix']);
+const MAX_INPUT = 200;
+
+function textInput(payload: unknown, name: string, required = true): string | undefined {
+  const raw = (payload as Record<string, unknown> | undefined)?.[name];
+  if (raw === undefined || raw === null || raw === '') {
+    if (required) throw new QuickFixError(`Input "${name}" is required.`);
+    return undefined;
+  }
+  if (typeof raw !== 'string' || raw.length > MAX_INPUT) throw new QuickFixError(`Input "${name}" is invalid.`);
+  return raw.trim();
+}
+
+async function quickFix<T>(context: unknown, body: (ctx: ResolverContext) => Promise<T>) {
+  const ctx = context as ResolverContext;
+  if (!ctx.moduleKey || !QUICK_FIX_MODULES.has(ctx.moduleKey) || !ctx.accountId) {
+    return { error: 'Quick fixes are only available in Jira.' };
+  }
+  try {
+    return await body(ctx);
+  } catch (err) {
+    if (err instanceof QuickFixError) return { error: err.message };
+    console.error('TraceGuard quick fix failed', err);
+    return { error: 'TraceGuard could not update Jira. Check the app logs.' };
+  }
+}
+
+resolver.define('getTestCandidates', ({ payload, context }) =>
+  quickFix(context, () => getTestCandidates(textInput(payload, 'requirementId')!, textInput(payload, 'release', false))),
+);
+
+/** Quick fix for G2: links a Test Case to the requirement with "verifies". */
+resolver.define('linkTestCase', ({ payload, context }) =>
+  quickFix(context, (ctx) => linkTestCase(ctx.accountId!, textInput(payload, 'requirementId')!, textInput(payload, 'testKey')!)),
+);
+
+/** Publishes the evidence pack of the selected release from the Jira project page. */
+resolver.define('publishEvidencePack', ({ payload, context }) => {
+  const ctx = context as ResolverContext;
+  if (ctx.moduleKey !== 'traceguard-matrix' || !ctx.accountId) return { error: 'Publish from the TraceGuard project page.' };
+  return generateEvidencePack(payloadOf(payload, ctx, ['release']));
 });
 
 export const handler = resolver.getDefinitions();

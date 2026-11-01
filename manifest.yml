@@ -167,8 +167,14 @@ modules:
         release:
           title: Release
           type: string
-          required: true
-          description: Jira fix version name.
+          required: false
+          description: Jira fix version name. Defaults to the next unreleased version.
+        space:
+          title: Confluence space
+          type: string
+          required: false
+          description: Confluence space key to publish in. Defaults to the configured
+            space, or the first global space.
     - key: assign_gap
       name: Assign gap
       function: assign-gap
@@ -244,6 +250,9 @@ permissions:
     - read:confluence-content.all
     - read:confluence-content.summary
     - write:confluence-content
+    - read:space:confluence      # evidence pack: find the target space (v2 API)
+    - write:page:confluence      # evidence pack: create the page (v2 API)
+    - write:confluence-space     # demo seed: create the CSM evidence space
     - read:graph:issue:jira
     - read:graph:project:jira
     - read:graph:page:confluence
