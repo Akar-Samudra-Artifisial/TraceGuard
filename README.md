@@ -1,13 +1,27 @@
 # TraceGuard (Forge app: Jira + Confluence)
 
-Spike-stage scaffold. All surfaces read the fictional CardioSense dataset in `src/demo/cardiosense.ts`; responses carry `"simulated": true`.
+Reads traceability live from the Jira project `CSM`. Until that project exists, every surface falls back to the fictional CardioSense sample in `src/demo/cardiosense.ts` and responses carry `"simulated": true`.
+
+## Jira data model
+
+| Concept | In Jira |
+| --- | --- |
+| Requirement | Issue type `Requirement`; issue property `traceguard` = `{ reqId, safetyClass, status, approvedAt, paths }` |
+| Hazard | Issue type `Hazard`; property `{ hazardId, severity }`; link `Mitigates` from the requirement |
+| Work item | Any other issue linked with `Implements` to a requirement |
+| Test case | Issue type `Test Case`; property `{ lastRun: { result, at, build } }`; link `Verifies` |
+| Release | Fix version (released = signed off) |
+| Edited after approval (G6) | Summary/description change in the changelog after `approvedAt` |
+| Pull requests | Simulated history in Forge KVS until the Bitbucket app reports real ones |
+
+**Load demo data** (Jira admin → Apps → TraceGuard setup) creates all of the above as project `CSM`.
 
 ## Layout
 
 | Path | Contents |
 | --- | --- |
 | `src/core/` | Gap engine G1–G6, change impact, trace chain, evidence pack (pure, no Forge imports) |
-| `src/adapters/source.ts` | Data source. Currently the demo fixture; Forge SQL comes later |
+| `src/adapters/` | Jira REST reader (`jira.ts`, `jira-map.ts`), demo seed (`seed.ts`), KVS settings (`store.ts`), source with fixture fallback (`source.ts`) |
 | `src/surfaces/actions.ts` | Rovo actions, also exposed as MCP tools through `rovo:mcp` |
 | `src/surfaces/ui.ts`, `events.ts` | UI resolver and background stubs |
 | `ui/src/` | Custom UI views (React): project page, issue panel, admin page, Confluence macro |
@@ -43,7 +57,7 @@ Spike B:
 
 1. Atlassian Administration → Apps → Sites → your site → Connected apps → TraceGuard → turn on the MCP tools.
 2. Add the remote MCP server `https://mcp.atlassian.com/forge/<app-uuid>` to Claude Code or Cursor (UUID = part of `app.id` after `ari:cloud:ecosystem::app/`).
-3. Ask the agent to change `src/dosing/limits.ts`. Expected from `check_change_impact`: REQ-112 (class C, HAZ-07), re-run CSM-T12 and CSM-T13.
+3. Ask the agent to change `src/dosing/limits.ts`. Expected from `check_change_impact`: REQ-112 (class C, HAZ-07), re-run the two dose tests (CSM-T12/T13 in the sample, CSM-23/24 after Load demo data on a fresh site).
 
 ## License
 

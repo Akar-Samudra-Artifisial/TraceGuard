@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { mount } from './mount';
-import { appIdFrom, getContext, useRemote } from './bridge';
-import { ClassBadge, ErrorState, Key, Loading, Masthead, Shell, SimulatedNote } from './components';
-import type { SetupInfo } from './types';
+import { appIdFrom, call, getContext, useRemote } from './bridge';
+import { ClassBadge, ErrorState, Key, Loading, Masthead, Shell } from './components';
+import type { SeedResult, SetupInfo } from './types';
 
 const COUNT_LABEL: Record<keyof SetupInfo['counts'], string> = {
   requirements: 'Requirements',
@@ -33,6 +33,44 @@ function CopyField({ value }: { value: string }) {
   );
 }
 
+function LoadDemo({ reason, onDone }: { reason: string | null; onDone: () => void }) {
+  const [state, setState] = useState<{ busy: boolean; result?: SeedResult; error?: string }>({ busy: false });
+  const run = async () => {
+    setState({ busy: true });
+    try {
+      const result = await call<SeedResult>('seedDemo');
+      setState({ busy: false, result });
+      onDone();
+    } catch (e) {
+      setState({ busy: false, error: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  return (
+    <section className="panel seed" aria-labelledby="seed-title">
+      <h2 id="seed-title" className="panel__title">
+        Load demo data
+      </h2>
+      <p className="panel__lede">
+        {reason ? `${reason} ` : ''}Creates the fictional CardioSense project <Key>CSM</Key> as real Jira issues:
+        8 requirements, 3 hazards, 7 stories, 9 test cases, releases 2.2 and 2.3, and one example of every gap
+        G1–G6. Pull requests are stored as simulated history. Takes about 20 seconds.
+      </p>
+      <div>
+        <button type="button" className="btn btn--primary" onClick={() => void run()} disabled={state.busy}>
+          {state.busy ? 'Creating project CSM…' : 'Load demo data'}
+        </button>
+      </div>
+      {state.error && <p className="state state--error">{state.error}</p>}
+      {state.result && (
+        <p className="empty">
+          {state.result.summary} {state.result.created.links} links created. Open project {state.result.projectKey} →
+          Apps → TraceGuard.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function App() {
   const setup = useRemote<SetupInfo>('getSetup', {}, []);
   const [appId, setAppId] = useState<string>();
@@ -49,14 +87,14 @@ function App() {
       {setup.error && <ErrorState message={setup.error} onRetry={setup.reload} />}
       {data && (
         <>
-          <SimulatedNote show={data.simulated} />
+          {data.dataSource === 'demo' && <LoadDemo reason={data.fallbackReason} onDone={setup.reload} />}
           <section className="panel" aria-labelledby="source-title">
             <div className="panel__bar">
               <h2 id="source-title" className="panel__title">
                 Data source
               </h2>
               <span className={data.dataSource === 'demo' ? 'status status--demo' : 'status status--ok'}>
-                {data.dataSource === 'demo' ? 'Demo dataset' : 'Live'}
+                {data.dataSource === 'demo' ? 'Built-in sample' : `Live · Jira project ${data.projectKey}`}
               </span>
             </div>
             <dl className="stats">

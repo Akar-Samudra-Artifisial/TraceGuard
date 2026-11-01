@@ -238,6 +238,9 @@ permissions:
   scopes:
     - read:jira-work
     - write:jira-work
+    - manage:jira-project          # demo seed: create project CSM and versions
+    - manage:jira-configuration    # demo seed: issue types, link types; admin check
+    - storage:app                  # settings and pull request history (Forge KVS)
     - read:confluence-content.all
     - read:confluence-content.summary
     - write:confluence-content

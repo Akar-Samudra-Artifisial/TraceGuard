@@ -25,18 +25,28 @@ export interface Overview {
   rows: MatrixRow[];
   gaps: Gap[];
   untracedChanges: Gap[];
+  projectKey: string | null;
+  simulatedPullRequests: boolean;
   simulated: boolean;
 }
 
 export interface SetupInfo {
   summary: string;
   dataSource: 'demo' | 'live';
+  projectKey: string | null;
+  fallbackReason: string | null;
   defaultRepo: string;
   safetyCriticalPaths: string[];
   releases: Release[];
   counts: Record<'requirements' | 'hazards' | 'workItems' | 'testCases' | 'pullRequests', number>;
   requirementPaths: { id: string; safetyClass: SafetyClass; paths: string[] }[];
   simulated: boolean;
+}
+
+export interface SeedResult {
+  summary: string;
+  projectKey: string;
+  created: Record<'requirements' | 'hazards' | 'workItems' | 'testCases' | 'links', number>;
 }
 
 export type TraceView = TraceResult & { summary: string; simulated: boolean };

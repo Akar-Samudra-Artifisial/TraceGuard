@@ -6,7 +6,7 @@ import type { TraceView } from './types';
 
 type Chain = TraceView['chains'][number];
 
-const DEMO_KEYS = ['CSM-41', 'CSM-45', 'REQ-118'];
+const DEMO_KEYS = ['REQ-112', 'REQ-115', 'REQ-118'];
 
 function Step({ label, state, children }: { label: string; state: 'ok' | 'gap' | 'empty'; children: ReactNode }) {
   return (
@@ -135,7 +135,7 @@ function App() {
                 className="input"
                 value={draft}
                 maxLength={200}
-                placeholder="REQ-112, CSM-41, CSM-T15"
+                placeholder="REQ-112, an issue key, or PR-57"
                 onChange={(e) => setDraft(e.target.value)}
               />
               <button type="submit" className="btn">
