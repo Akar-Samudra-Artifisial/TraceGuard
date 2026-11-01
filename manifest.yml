@@ -179,8 +179,9 @@ modules:
       name: Assign gap
       function: assign-gap
       actionVerb: CREATE
-      description: Create a Jira task to close a traceability gap and assign it to its
-        owner.
+      description: Create a Jira task to close a traceability gap, assign it to the gap
+        owner (or the given person) and relate it to the requirement. Returns the
+        existing task if the gap already has an open one.
       inputs:
         gapId:
           title: Gap ID
@@ -252,6 +253,7 @@ permissions:
   scopes:
     - read:jira-work
     - write:jira-work
+    - read:jira-user               # assign_gap: find the assignee by name
     - manage:jira-project          # demo seed: create project CSM and versions
     - manage:jira-configuration    # demo seed: issue types, link types; admin check
     - storage:app                  # settings and pull request history (Forge KVS)

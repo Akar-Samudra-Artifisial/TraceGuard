@@ -22,9 +22,11 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 - Halaman Workspace settings → TraceGuard di Bitbucket (khusus admin workspace) untuk menempelkan URL dan secret koneksi; koneksi diuji dengan request bertanda tangan sebelum disimpan.
 - Panel "Connect Bitbucket" di TraceGuard setup (khusus admin Jira) membuat atau merotasi secret koneksi dan menampilkan URL web trigger. Secret hanya tampil sekali.
 - Web trigger `trace-lookup` di app Jira menjawab merge check Bitbucket (HMAC-SHA256, toleransi 5 menit). Pull request yang lolos dan di-merge dicatat sebagai riwayat trace asli.
+- `assign_gap` kini membuat Task Jira sungguhan untuk satu celah: label `traceguard-gap`, fix version rilisnya, di-assign ke pemilik celah (atau nama yang diminta), dan ditautkan `Relates` ke issue requirement. App memeriksa dulu izin Create, Assign, dan Link work items milik user. Permintaan ulang untuk celah yang tasknya masih terbuka mengembalikan task yang sama. Dengan data sampel bawaan, action ini tetap hanya pratinjau. Prompt Audit Prep Agent kini selalu mengisi assignee (Rovo menolak permintaan tanpa input itu dengan "The request was invalid.").
 - Tombol "Load demo data" di TraceGuard setup (khusus admin Jira) membuat proyek CardioSense `CSM` sebagai issue Jira asli, lengkap dengan satu contoh celah G1–G6. Riwayat pull request disimpan sebagai data simulasi.
 
 ### Changed
+- Scope baru `read:jira-user` untuk mencari assignee `assign_gap`. Admin site harus menyetujui upgrade versi mayor.
 - App Jira kini memakai web trigger dinamis, sehingga tidak lagi memenuhi syarat Runs on Atlassian. Admin site harus menyetujui upgrade versi mayor.
 - Scope baru `read:space:confluence`, `write:page:confluence`, dan `write:confluence-space`. Admin site harus menyetujui upgrade versi mayor.
 - Input `release` pada `generate_evidence_pack` kini opsional (default: rilis berikutnya yang belum dirilis).
