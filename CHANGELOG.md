@@ -30,6 +30,7 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 - App Jira kini memakai web trigger dinamis, sehingga tidak lagi memenuhi syarat Runs on Atlassian. Admin site harus menyetujui upgrade versi mayor.
 - Scope baru `read:space:confluence`, `write:page:confluence`, dan `write:confluence-space`. Admin site harus menyetujui upgrade versi mayor.
 - Input `release` pada `generate_evidence_pack` kini opsional (default: rilis berikutnya yang belum dirilis).
+- Audit Prep Agent hanya menampilkan tautan yang dikembalikan action TraceGuard; issue, PR, dan halaman lain ditulis sebagai key tanpa tautan karangan.
 - App sekarang meminta scope `manage:jira-project`, `manage:jira-configuration`, dan `storage:app`. Admin site harus menyetujui upgrade versi mayor.
 - Panel "Trace chain" bisa dibuka dari issue requirement itu sendiri (dicari lewat issue key maupun ID REQ).
 
