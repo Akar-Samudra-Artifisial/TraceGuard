@@ -30,3 +30,6 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 - Input `release` pada `generate_evidence_pack` kini opsional (default: rilis berikutnya yang belum dirilis).
 - App sekarang meminta scope `manage:jira-project`, `manage:jira-configuration`, dan `storage:app`. Admin site harus menyetujui upgrade versi mayor.
 - Panel "Trace chain" bisa dibuka dari issue requirement itu sendiri (dicari lewat issue key maupun ID REQ).
+
+### Fixed
+- Halaman pengaturan TraceGuard for Bitbucket menolak semua admin workspace karena Bitbucket menghapus endpoint `GET /2.0/user/permissions/workspaces`; cek admin kini memakai `GET /2.0/user/workspaces/{workspace}/permission`.

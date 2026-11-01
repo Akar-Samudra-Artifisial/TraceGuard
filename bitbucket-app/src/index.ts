@@ -27,18 +27,29 @@ export async function mergeCheck(event: MergeCheckEvent): Promise<MergeCheckResp
 
 type Context = { accountId?: string; workspaceId?: string; extension?: { workspace?: { uuid?: string } } };
 
+/** `{uuid}` from a bare UUID, a braced UUID or a workspace ARI (ari:cloud:bitbucket::workspace/<uuid>). */
+export function workspaceUuid(raw: string | undefined): string | undefined {
+  const m = raw?.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  return m ? `{${m[0].toLowerCase()}}` : undefined;
+}
+
 /** Only workspace administrators may change the connection. */
 async function isWorkspaceAdmin(context: Context): Promise<boolean> {
-  const uuid = context.extension?.workspace?.uuid ?? context.workspaceId;
-  if (!uuid) return false;
+  const uuid = workspaceUuid(context.extension?.workspace?.uuid ?? context.workspaceId);
+  if (!uuid) {
+    console.warn('TraceGuard admin check: no workspace in context');
+    return false;
+  }
+  // GET /2.0/user/permissions/workspaces was removed; this is its replacement.
   const res = await api
     .asUser()
-    .requestBitbucket(route`/2.0/user/permissions/workspaces?q=${`workspace.uuid="${uuid}"`}`, {
-      headers: { Accept: 'application/json' },
-    });
-  if (!res.ok) return false;
-  const body = (await res.json()) as { values?: { permission?: string }[] };
-  return body.values?.[0]?.permission === 'owner';
+    .requestBitbucket(route`/2.0/user/workspaces/${uuid}/permission`, { headers: { Accept: 'application/json' } });
+  if (!res.ok) {
+    console.warn('TraceGuard admin check failed', { status: res.status });
+    return false;
+  }
+  const body = (await res.json()) as { permission?: string };
+  return body.permission === 'owner';
 }
 
 /** Sends a signed request with no files, which TraceGuard for Jira always answers with a pass. */
