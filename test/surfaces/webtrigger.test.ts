@@ -60,8 +60,9 @@ describe('trace-lookup web trigger', () => {
   it('records a traced pull request when it merges', async () => {
     const res = await traceLookup(request(payload({ trigger: 'on-merge', issueKeys: ['CSM-41'] })));
     expect(parse(res).success).toBe(true);
+    expect((state.saved[0] as { author?: string }).author).toBeUndefined();
     expect(state.saved).toEqual([
-      expect.objectContaining({ id: 'PR-7', repo: DEMO_REPO, issueKeys: ['CSM-41'], files: ['src/dosing/limits.ts'], author: 'Andi' }),
+      expect.objectContaining({ id: 'PR-7', repo: DEMO_REPO, issueKeys: ['CSM-41'], files: ['src/dosing/limits.ts'] }),
     ]);
   });
 

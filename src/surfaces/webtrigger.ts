@@ -7,7 +7,8 @@ import { getBitbucketSecret, upsertPullRequest } from '../adapters/store';
 /**
  * Web trigger `trace-lookup`, called by the TraceGuard Bitbucket app's merge check.
  * Request (JSON, signed with the shared secret):
- *   { repo, trigger, pullRequest: { id, title, author?, url? }, files[], issueKeys[], safetyCriticalPaths? }
+ *   { repo, trigger, pullRequest: { id, title }, files[], issueKeys[], safetyCriticalPaths? }
+ * A `pullRequest.author` sent by older Bitbucket app versions is accepted but never stored (no personal data).
  * Response: core.MergeCheckResult plus `simulated`.
  */
 
@@ -113,7 +114,6 @@ export async function traceLookup(req: WebTriggerRequest): Promise<WebTriggerRes
         issueKeys: input.issueKeys,
         files: input.files,
         mergedAt: new Date().toISOString(),
-        author: input.pullRequest.author,
       });
     }
     return json(200, { ...result, simulated: src.simulated, projectKey: src.projectKey ?? null });
