@@ -68,7 +68,7 @@ export async function runMergeCheck(event: MergeCheckEvent, deps: CheckDeps): Pr
   const body = JSON.stringify({
     repo: config.repo ?? slug,
     trigger: event.trigger.type,
-    pullRequest: { id: pr.id, title: pr.title.slice(0, 500), author: pr.author },
+    pullRequest: { id: pr.id, title: pr.title.slice(0, 500) },
     files: files.slice(0, 500),
     issueKeys: extractIssueKeys([pr.title, pr.sourceBranch, ...commits]),
     ...(config.safetyCriticalPaths ? { safetyCriticalPaths: config.safetyCriticalPaths } : {}),

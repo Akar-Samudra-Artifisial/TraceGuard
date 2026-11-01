@@ -37,7 +37,6 @@ export interface PullRequestInfo {
   description: string;
   sourceBranch: string;
   destinationCommit: string;
-  author?: string;
 }
 
 export interface PrRef {
@@ -58,7 +57,6 @@ export async function getPullRequest(ref: PrRef): Promise<PullRequestInfo> {
     description?: string;
     source?: { branch?: { name?: string } };
     destination?: { commit?: { hash?: string }; branch?: { name?: string } };
-    author?: { display_name?: string };
   };
   return {
     id: pr.id,
@@ -66,7 +64,6 @@ export async function getPullRequest(ref: PrRef): Promise<PullRequestInfo> {
     description: pr.description ?? '',
     sourceBranch: pr.source?.branch?.name ?? '',
     destinationCommit: pr.destination?.commit?.hash ?? pr.destination?.branch?.name ?? '',
-    author: pr.author?.display_name,
   };
 }
 

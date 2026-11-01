@@ -14,7 +14,7 @@ function deps(over: Partial<CheckDeps> = {}, reply: { status: number; text: stri
   const sent: { url: string; body: string; headers: Record<string, string> }[] = [];
   const d: CheckDeps = {
     getConnection: async () => ({ url: 'https://x.webtrigger.atlassian.app/public/abc', secret }),
-    getPullRequest: async () => ({ id: 7, title: 'Raise max dose', description: '', sourceBranch: 'feature/csm-16-limits', destinationCommit: 'abc123', author: 'Andi' }),
+    getPullRequest: async () => ({ id: 7, title: 'Raise max dose', description: '', sourceBranch: 'feature/csm-16-limits', destinationCommit: 'abc123' }),
     getRepoSlug: async () => 'cardiosense-firmware',
     getChangedFiles: async () => ['src/dosing/limits.ts'],
     getCommitMessages: async () => ['tune limits'],
@@ -37,7 +37,7 @@ describe('runMergeCheck', () => {
     expect(JSON.parse(req.body)).toEqual({
       repo: 'cardiosense-firmware',
       trigger: 'on-code-pushed',
-      pullRequest: { id: 7, title: 'Raise max dose', author: 'Andi' },
+      pullRequest: { id: 7, title: 'Raise max dose' },
       files: ['src/dosing/limits.ts'],
       issueKeys: ['CSM-16'],
     });
