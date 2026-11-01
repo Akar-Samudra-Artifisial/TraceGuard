@@ -37,3 +37,12 @@ const BITBUCKET_SECRET = 'bitbucket-connection-secret';
 /** Shared secret for requests from the TraceGuard Bitbucket app (Forge KVS secret storage). */
 export const getBitbucketSecret = () => kvs.getSecret<string>(BITBUCKET_SECRET);
 export const setBitbucketSecret = (value: string) => kvs.setSecret(BITBUCKET_SECRET, value);
+
+/** Jira task created by assign_gap for a gap, so a repeated request does not create a duplicate. */
+export interface GapTask {
+  key: string;
+  url: string;
+}
+const gapTaskKey = (gapId: string) => `gap-task:${gapId.toLowerCase().replace(/[^a-z0-9:._-]/g, '_')}`.slice(0, 100);
+export const getGapTask = (gapId: string) => kvs.get<GapTask>(gapTaskKey(gapId));
+export const setGapTask = (gapId: string, task: GapTask) => kvs.set(gapTaskKey(gapId), task);

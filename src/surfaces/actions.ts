@@ -2,11 +2,12 @@ import * as core from '../core';
 import { ConfluenceError, createPage, findSpace } from '../adapters/confluence';
 import { loadTraceSource, type TraceSource } from '../adapters/source';
 import { getBitbucketSecret, getSettings } from '../adapters/store';
+import { AssignError, createGapTask, findOpenGap, taskSummary } from './assign';
 import { evidencePageTitle, renderEvidencePage, type EvidencePageContext } from './evidence-page';
 
 /** Payload Forge passes to an `action` function: the declared inputs plus an optional context object. */
 export type ActionPayload = Record<string, unknown> & {
-  context?: { cloudId?: string; moduleKey?: string; jira?: { issueKey?: string | number } };
+  context?: { cloudId?: string; moduleKey?: string; accountId?: string; jira?: { issueKey?: string | number } };
 };
 
 export type ActionResult = Record<string, unknown> & { summary: string } | { error: string };
@@ -60,7 +61,7 @@ async function run(
     const src = await loadTraceSource();
     return await body(src);
   } catch (err) {
-    if (err instanceof InputError || err instanceof core.UnknownReleaseError) return { error: err.message };
+    if (err instanceof InputError || err instanceof AssignError || err instanceof core.UnknownReleaseError) return { error: err.message };
     if (err instanceof ConfluenceError) {
       console.error('TraceGuard Confluence call failed', { moduleKey: payload.context?.moduleKey, err });
       return { error: `Confluence refused the request (${err.message}). Check that Confluence is installed and the app can create pages in the space.` };
@@ -189,26 +190,31 @@ export const generateEvidencePack = (payload: ActionPayload) =>
     };
   });
 
-export const assignGap = (payload: ActionPayload) =>
-  run(payload, (src) => {
+/** Forge passes the invocation context (with the calling user) as the second handler argument. */
+export type InvocationContext = { principal?: { accountId?: string }; accountId?: string } | undefined;
+
+/**
+ * Creates a Jira task for one open gap and assigns it. With the built-in sample (no live Jira data)
+ * it only previews the task, marked simulated.
+ */
+export const assignGap = (payload: ActionPayload, context?: InvocationContext) =>
+  run(payload, async (src) => {
     const gapId = requiredString(payload, 'gapId');
-    const open = src.snapshot.releases
-      .filter((r) => !r.signedOff)
-      .flatMap((r) => core.detectGaps(src.snapshot, src.config, r.name));
-    const gap = open.find((g) => g.id.toLowerCase() === gapId.toLowerCase());
-    if (!gap) throw new InputError(`No open gap with ID "${gapId}". Call list_gaps to see current gap IDs.`);
-    const assignee = optionalString(payload, 'assignee') ?? gap.owner;
-    return {
-      summary: `Would create a Jira task "Close ${gap.code} gap: ${gap.requirementId ?? gap.artifactKey}" assigned to ${assignee ?? 'nobody'}. Issue creation is not enabled yet.`,
-      gap,
-      wouldCreate: {
-        summary: `Close ${gap.code} gap: ${gap.requirementId ?? gap.artifactKey}`,
-        description: gap.message,
-        assignee: assignee ?? null,
-      },
-      issueKey: null,
-      simulated: true,
-    };
+    const assignee = optionalString(payload, 'assignee');
+    if (src.simulated) {
+      const found = findOpenGap(src, gapId);
+      if (!found) throw new InputError(`No open gap with ID "${gapId}". Call list_gaps to see current gap IDs.`);
+      const who = assignee ?? found.gap.owner;
+      return {
+        summary: `Demo data: would create a Jira task "${taskSummary(found.gap)}" assigned to ${who ?? 'nobody'}. Load demo data in TraceGuard setup to create real tasks.`,
+        gap: found.gap,
+        wouldCreate: { summary: taskSummary(found.gap), description: found.gap.message, assignee: who ?? null },
+        issueKey: null,
+        simulated: true,
+      };
+    }
+    const accountId = context?.principal?.accountId ?? context?.accountId ?? payload.context?.accountId;
+    return { ...(await createGapTask(src, accountId, gapId, assignee)), simulated: false };
   });
 
 /** Data behind the Jira project page and Confluence macro: one row per requirement plus all open gaps. */
