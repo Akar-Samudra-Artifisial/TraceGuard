@@ -126,7 +126,7 @@ function App() {
       {overview.error && <ErrorState message={overview.error} onRetry={overview.reload} />}
       {data && (
         <>
-          <SimulatedNote show={data.simulated} pullRequests={data.simulatedPullRequests} />
+          <SimulatedNote show={data.simulated} pullRequests={data.simulatedPullRequests} bitbucketConnected={data.bitbucketConnected} />
           <section className="hero" aria-label="Coverage">
             <CoverageMeter coverage={data.coverage} rows={data.rows} />
             <div className="hero__side">

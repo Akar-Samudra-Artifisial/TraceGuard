@@ -228,9 +228,10 @@ export const assignGap = (payload: ActionPayload, context?: InvocationContext) =
 
 /** Data behind the Jira project page and Confluence macro: one row per requirement plus all open gaps. */
 export const getOverview = (payload: ActionPayload, context?: InvocationContext) =>
-  run(payload, context, (src) => {
+  run(payload, context, async (src) => {
     const release = releaseOf(src, payload);
     const pack = core.buildEvidencePack(src.snapshot, src.config, release);
+    const bitbucketConnected = Boolean(await getBitbucketSecret());
     const hazards = Object.fromEntries(src.snapshot.hazards.map((h) => [h.id, h]));
     return {
       summary: gapSummary(release, pack.gaps),
@@ -246,6 +247,7 @@ export const getOverview = (payload: ActionPayload, context?: InvocationContext)
       untracedChanges: pack.gaps.filter((g) => !g.requirementId),
       projectKey: src.projectKey ?? null,
       simulatedPullRequests: src.snapshot.pullRequests.some((pr) => pr.simulated),
+      bitbucketConnected,
       simulated: src.simulated,
     };
   });

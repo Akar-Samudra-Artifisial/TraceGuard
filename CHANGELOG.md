@@ -44,3 +44,4 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 ### Fixed
 - Pull request yang dilaporkan app Bitbucket tidak lagi menyimpan nama author. App Bitbucket berhenti mengirimkannya, dan app Jira mengabaikan field itu dari versi lama. Dengan begitu, app tidak menyimpan data pribadi.
 - Halaman pengaturan TraceGuard for Bitbucket menolak semua admin workspace karena Bitbucket menghapus endpoint `GET /2.0/user/permissions/workspaces`; cek admin kini memakai `GET /2.0/user/workspaces/{workspace}/permission`.
+- Catatan "Live Jira" di halaman proyek dan macro Confluence tidak lagi menyebut app Bitbucket belum terpasang bila koneksi Bitbucket sudah dibuat. Teksnya kini menyebut Bitbucket terhubung dan hanya pull request dari data demo yang berupa riwayat simulasi.

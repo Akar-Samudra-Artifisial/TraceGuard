@@ -41,7 +41,15 @@ export function Mark() {
   );
 }
 
-export function SimulatedNote({ show, pullRequests = false }: { show: boolean; pullRequests?: boolean }) {
+export function SimulatedNote({
+  show,
+  pullRequests = false,
+  bitbucketConnected = false,
+}: {
+  show: boolean;
+  pullRequests?: boolean;
+  bitbucketConnected?: boolean;
+}) {
   if (show) {
     return (
       <p className="note" role="note">
@@ -52,6 +60,15 @@ export function SimulatedNote({ show, pullRequests = false }: { show: boolean; p
     );
   }
   if (!pullRequests) return null;
+  if (bitbucketConnected) {
+    return (
+      <p className="note" role="note">
+        <span className="note__tag">Live Jira</span>
+        Requirements, hazards, stories and tests are read live from Jira. Bitbucket is connected: merged pull requests
+        are added as they merge. Pull requests from the demo data are simulated history.
+      </p>
+    );
+  }
   return (
     <p className="note" role="note">
       <span className="note__tag">Live Jira</span>
