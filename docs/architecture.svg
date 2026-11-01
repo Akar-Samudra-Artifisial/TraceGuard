@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <title>TraceGuard architecture</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#44546F"/>
+    </marker>
+    <style>
+      .h1 { font-size: 40px; font-weight: 700; fill: #172B4D; }
+      .sub { font-size: 22px; fill: #44546F; }
+      .col { font-size: 18px; font-weight: 700; fill: #626F86; letter-spacing: 2px; }
+      .t { font-size: 22px; font-weight: 700; fill: #172B4D; }
+      .d { font-size: 17px; fill: #44546F; }
+      .m { font-family: 'SF Mono', Menlo, monospace; font-size: 16px; fill: #172B4D; }
+      .lbl { font-size: 16px; fill: #44546F; font-style: italic; }
+      .card { fill: #FFFFFF; stroke: #DCDFE4; stroke-width: 2; }
+      .pill { fill: #E9F2FF; stroke: #85B8FF; stroke-width: 1.5; }
+      .core { fill: #F8F8FF; stroke: #8F7EE7; stroke-width: 2; }
+      .adp { fill: #F7F8F9; stroke: #B3B9C4; stroke-width: 1.5; }
+      .line { stroke: #44546F; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .both { marker-start: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#F1F2F4"/>
+  <text x="80" y="78" class="h1">TraceGuard architecture</text>
+  <text x="80" y="116" class="sub">Two Forge apps. Trace data lives in Jira; nothing is copied to an outside server.</text>
+
+  <!-- Column labels -->
+  <text x="80" y="168" class="col">WHERE PEOPLE WORK</text>
+  <text x="620" y="168" class="col">FORGE APPS</text>
+  <text x="1420" y="168" class="col">ATLASSIAN DATA</text>
+
+  <!-- Left: surfaces -->
+  <g>
+    <rect x="80" y="190" width="440" height="120" rx="12" class="card"/>
+    <text x="104" y="232" class="t">Jira</text>
+    <text x="104" y="262" class="d">Project page: matrix, coverage, gaps</text>
+    <text x="104" y="288" class="d">Issue panel: trace chain, Link test case</text>
+
+    <rect x="80" y="334" width="440" height="120" rx="12" class="card"/>
+    <text x="104" y="376" class="t">Confluence</text>
+    <text x="104" y="406" class="d">Matrix macro</text>
+    <text x="104" y="432" class="d">Published evidence packs</text>
+
+    <rect x="80" y="478" width="440" height="120" rx="12" class="card"/>
+    <text x="104" y="520" class="t">Rovo · Audit Prep Agent</text>
+    <text x="104" y="550" class="d">Asks for gaps, publishes evidence,</text>
+    <text x="104" y="576" class="d">assigns gaps after user confirmation</text>
+
+    <rect x="80" y="622" width="440" height="120" rx="12" class="card"/>
+    <text x="104" y="664" class="t">Coding agents (MCP clients)</text>
+    <text x="104" y="694" class="d">Check change impact before editing,</text>
+    <text x="104" y="720" class="d">via the Atlassian MCP server</text>
+
+    <rect x="80" y="766" width="440" height="120" rx="12" class="card"/>
+    <text x="104" y="808" class="t">Bitbucket pull request</text>
+    <text x="104" y="838" class="d">Merge check blocks untraced changes</text>
+    <text x="104" y="864" class="d">to safety-critical code</text>
+  </g>
+
+  <!-- Center: TraceGuard for Jira -->
+  <rect x="620" y="190" width="700" height="540" rx="16" fill="#FFFFFF" stroke="#0C66E4" stroke-width="3"/>
+  <text x="648" y="232" class="t" fill="#0C66E4">TraceGuard for Jira</text>
+  <text x="1296" y="232" class="d" text-anchor="end">Forge · Jira + Confluence</text>
+
+  <rect x="648" y="252" width="152" height="70" rx="10" class="pill"/>
+  <text x="724" y="282" class="d" text-anchor="middle" fill="#172B4D">Custom UI</text>
+  <text x="724" y="306" class="d" text-anchor="middle">resolver</text>
+  <rect x="812" y="252" width="152" height="70" rx="10" class="pill"/>
+  <text x="888" y="282" class="d" text-anchor="middle" fill="#172B4D">6 Rovo</text>
+  <text x="888" y="306" class="d" text-anchor="middle">actions</text>
+  <rect x="976" y="252" width="152" height="70" rx="10" class="pill"/>
+  <text x="1052" y="282" class="d" text-anchor="middle" fill="#172B4D">rovo:mcp</text>
+  <text x="1052" y="306" class="d" text-anchor="middle">5 tools</text>
+  <rect x="1140" y="252" width="152" height="70" rx="10" class="pill"/>
+  <text x="1216" y="282" class="d" text-anchor="middle" fill="#172B4D">Web trigger</text>
+  <text x="1216" y="306" class="m" text-anchor="middle" font-size="14">trace-lookup</text>
+
+  <rect x="648" y="346" width="644" height="170" rx="12" class="core"/>
+  <text x="672" y="382" class="t">Core (pure TypeScript, unit-tested)</text>
+  <text x="672" y="416" class="d">Trace snapshot → requirement chains per release</text>
+  <text x="672" y="444" class="d">Gap engine G1–G6 · coverage · change impact</text>
+  <text x="672" y="472" class="d">Merge-check verdict · evidence pack</text>
+  <text x="672" y="500" class="d" font-size="15">Same answer in every surface: UI, Rovo, MCP and Bitbucket</text>
+
+  <rect x="648" y="540" width="206" height="166" rx="10" class="adp"/>
+  <text x="664" y="574" class="t" font-size="19">Jira REST</text>
+  <text x="664" y="602" class="d" font-size="15">Issues, links,</text>
+  <text x="664" y="624" class="d" font-size="15">fix versions</text>
+  <text x="664" y="652" class="d" font-size="15">Per-user Browse</text>
+  <text x="664" y="674" class="d" font-size="15">permission check</text>
+
+  <rect x="867" y="540" width="206" height="166" rx="10" class="adp"/>
+  <text x="883" y="574" class="t" font-size="19">Confluence REST</text>
+  <text x="883" y="602" class="d" font-size="15">Publish evidence</text>
+  <text x="883" y="624" class="d" font-size="15">pages</text>
+  <text x="883" y="652" class="d" font-size="15">Per-user space</text>
+  <text x="883" y="674" class="d" font-size="15">permission check</text>
+
+  <rect x="1086" y="540" width="206" height="166" rx="10" class="adp"/>
+  <text x="1102" y="574" class="t" font-size="19">Forge KVS</text>
+  <text x="1102" y="602" class="d" font-size="15">Settings</text>
+  <text x="1102" y="624" class="d" font-size="15">Merged PR history</text>
+  <text x="1102" y="652" class="d" font-size="15">Shared secret</text>
+  <text x="1102" y="674" class="d" font-size="15">(secret storage)</text>
+
+  <!-- Center bottom: TraceGuard for Bitbucket -->
+  <rect x="620" y="790" width="700" height="200" rx="16" fill="#FFFFFF" stroke="#1D7F8C" stroke-width="3"/>
+  <text x="648" y="832" class="t" fill="#1D7F8C">TraceGuard for Bitbucket</text>
+  <text x="1296" y="832" class="d" text-anchor="end">Forge · Bitbucket</text>
+  <text x="648" y="868" class="d">Merge check on <tspan class="m">on-code-pushed</tspan> and <tspan class="m">on-merge</tspan></text>
+  <text x="648" y="898" class="d">Reads changed files, issue keys (title, branch, commits)</text>
+  <text x="648" y="928" class="d">and <tspan class="m">.traceguard.yml</tspan> from the destination branch</text>
+  <text x="648" y="962" class="d">Fails closed when Jira cannot answer</text>
+
+  <!-- Right: data -->
+  <rect x="1420" y="190" width="420" height="330" rx="12" class="card"/>
+  <text x="1444" y="232" class="t">Jira project</text>
+  <text x="1444" y="266" class="d">Issue types</text>
+  <text x="1444" y="292" class="m">Requirement · Hazard</text>
+  <text x="1444" y="316" class="m">Story · Test Case</text>
+  <text x="1444" y="352" class="d">Links</text>
+  <text x="1444" y="378" class="m">Implements · Verifies</text>
+  <text x="1444" y="402" class="m">Mitigates</text>
+  <text x="1444" y="438" class="d">Fix version = release</text>
+  <text x="1444" y="466" class="d">Issue property = safety class,</text>
+  <text x="1444" y="490" class="d">code paths, approval</text>
+
+  <rect x="1420" y="560" width="420" height="146" rx="12" class="card"/>
+  <text x="1444" y="602" class="t">Confluence space</text>
+  <text x="1444" y="636" class="d">Evidence pack pages:</text>
+  <text x="1444" y="662" class="d">summary, open gaps, matrix</text>
+
+  <rect x="1420" y="790" width="420" height="200" rx="12" class="card"/>
+  <text x="1444" y="832" class="t">Bitbucket repository</text>
+  <text x="1444" y="866" class="d">Pull request diffstat and commits</text>
+  <text x="1444" y="896" class="m">.traceguard.yml</text>
+  <text x="1444" y="922" class="d">repo name + safety-critical globs</text>
+
+  <!-- Arrows: people → apps -->
+  <path d="M520,250 L616,250" class="line"/>
+  <path d="M520,394 L616,394" class="line"/>
+  <path d="M520,538 L616,538" class="line"/>
+  <path d="M520,682 L616,682" class="line"/>
+  <path d="M520,826 L616,826" class="line"/>
+
+  <!-- Arrows: adapters → data -->
+  <path d="M1320,340 L1416,340" class="line both"/>
+  <text x="1368" y="328" class="lbl" text-anchor="middle">read / write</text>
+  <path d="M1320,633 L1416,633" class="line both"/>
+  <text x="1368" y="621" class="lbl" text-anchor="middle">publish</text>
+  <path d="M1320,890 L1416,890" class="line"/>
+  <text x="1368" y="878" class="lbl" text-anchor="middle">read</text>
+
+  <!-- Arrow: Bitbucket app → web trigger -->
+  <path d="M1216,786 L1216,734" class="line both"/>
+  <text x="1232" y="766" class="lbl">HMAC-signed lookup + verdict</text>
+
+  <!-- Footer -->
+  <text x="80" y="1040" class="d">Reads and writes use the app identity, after checking the signed-in user's own Jira and Confluence permissions.</text>
+</svg>
