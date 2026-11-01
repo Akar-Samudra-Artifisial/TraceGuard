@@ -64,7 +64,7 @@ Atlassian Forge, Jira, Confluence, Bitbucket, Rovo agents and actions, Rovo MCP,
 ## Links
 
 - Source code: https://github.com/Akar-Samudra-Artifisial/TraceGuard (MIT)
-- Video: https://www.youtube.com/watch?v=fq5G7Uyygf0
+- Video: https://www.youtube.com/watch?v=qbhBa3PppfA
 
 ## Installation links
 
