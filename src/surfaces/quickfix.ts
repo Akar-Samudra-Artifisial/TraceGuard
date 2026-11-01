@@ -3,6 +3,7 @@ import type { TestCase, TraceSnapshot } from '../core/types';
 import { createLink, getProject, userHasProjectPermissions } from '../adapters/jira';
 import { LINK_TYPES } from '../adapters/jira-map';
 import { loadTraceSource } from '../adapters/source';
+import { AccessError, assertCanBrowse } from './access';
 
 export interface TestCandidate {
   key: string;
@@ -35,18 +36,24 @@ export function rankTestCandidates(s: TraceSnapshot, requirementId: string, rele
     }));
 }
 
-async function liveRequirement(id: string) {
+async function liveRequirement(accountId: string, id: string) {
   const src = await loadTraceSource();
   if (src.simulated || !src.projectKey) {
     throw new QuickFixError('Linking needs live Jira data. Load demo data in TraceGuard setup first.');
+  }
+  try {
+    await assertCanBrowse(src, accountId);
+  } catch (e) {
+    if (e instanceof AccessError) throw new QuickFixError(e.message);
+    throw e;
   }
   const req = core.findRequirement(src.snapshot, id);
   if (!req?.key) throw new QuickFixError(`Requirement ${id} was not found in Jira project ${src.projectKey}.`);
   return { src, req, projectKey: src.projectKey };
 }
 
-export async function getTestCandidates(requirementId: string, release?: string) {
-  const { src, req } = await liveRequirement(requirementId);
+export async function getTestCandidates(accountId: string, requirementId: string, release?: string) {
+  const { src, req } = await liveRequirement(accountId, requirementId);
   const rel = release ? core.findRelease(src.snapshot, release).name : core.defaultRelease(src.snapshot)?.name ?? '';
   return {
     summary: `Test cases that could verify ${req.id}.`,
@@ -63,7 +70,7 @@ export async function getTestCandidates(requirementId: string, release?: string)
 export async function linkTestCase(accountId: string, requirementId: string, testKey: string) {
   const key = testKey.trim().toUpperCase();
   if (!KEY.test(key)) throw new QuickFixError(`"${testKey}" is not a Jira issue key.`);
-  const { src, req, projectKey } = await liveRequirement(requirementId);
+  const { src, req, projectKey } = await liveRequirement(accountId, requirementId);
   const test = src.snapshot.testCases.find((t) => t.key.toUpperCase() === key);
   if (!test) throw new QuickFixError(`${key} is not a Test Case in project ${projectKey}.`);
   if (test.requirementIds.includes(req.id)) {

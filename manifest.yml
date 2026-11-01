@@ -259,6 +259,7 @@ permissions:
     - storage:app                  # settings and pull request history (Forge KVS)
     - read:confluence-content.all
     - read:confluence-content.summary
+    - read:confluence-content.permission  # evidence pack: check the user can view the target space
     - write:confluence-content
     - read:space:confluence      # evidence pack: find the target space (v2 API)
     - write:page:confluence      # evidence pack: create the page (v2 API)

@@ -45,7 +45,7 @@ The Jira app writes only when a user explicitly asks it to:
 - **assign_gap** creates and assigns a Jira task.
 - **Publish evidence pack** creates a Confluence page.
 
-Before it acts, the app checks the user's own Jira permissions for linking issues and for creating and assigning tasks. The Bitbucket app never writes to Bitbucket. It only returns a pass or fail result for the merge check.
+The app reads Jira and Confluence as itself, so it checks the user's own permissions first: TraceGuard data from a Jira project is shown only to users with Browse projects in that project, an evidence pack is published only to a space the user can view, and linking issues or creating and assigning tasks needs the matching Jira permissions. The Bitbucket app never writes to Bitbucket. It only returns a pass or fail result for the merge check.
 
 ## Data storage
 

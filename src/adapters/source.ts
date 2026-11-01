@@ -14,6 +14,8 @@ export interface TraceSource {
   simulated: boolean;
   /** Jira project the data was read from, when live. */
   projectKey?: string;
+  /** Numeric Jira project ID, when live (used for permission checks). */
+  projectId?: string;
   /** Why the fixture is shown instead of Jira data. */
   fallbackReason?: string;
 }
@@ -59,5 +61,6 @@ export async function loadTraceSource(): Promise<TraceSource> {
     defaultRepo: settings?.defaultRepo ?? DEMO_REPO,
     simulated: false,
     projectKey,
+    projectId: project.id,
   };
 }

@@ -37,6 +37,16 @@ export interface Space {
   id: string;
   key: string;
   name: string;
+  homepageId?: string;
+}
+
+/** True when the user may read the content (page) with this ID. */
+export async function userCanReadContent(accountId: string, contentId: string): Promise<boolean> {
+  const res = await confluence<{ hasPermission?: boolean }>('POST', route`/wiki/rest/api/content/${contentId}/permission/check`, {
+    subject: { type: 'user', identifier: accountId },
+    operation: 'read',
+  });
+  return res?.hasPermission === true;
 }
 
 export interface SpaceLookup {

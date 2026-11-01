@@ -33,6 +33,10 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 - App sekarang meminta scope `manage:jira-project`, `manage:jira-configuration`, dan `storage:app`. Admin site harus menyetujui upgrade versi mayor.
 - Panel "Trace chain" bisa dibuka dari issue requirement itu sendiri (dicari lewat issue key maupun ID REQ).
 
+### Security
+- Data Jira live (halaman proyek, panel Trace chain, macro Confluence, halaman setup, agen Rovo, dan tool MCP) hanya ditampilkan bila user pemanggil punya izin Browse projects di proyek tersebut. Identitas user hanya diambil dari context Forge, tidak pernah dari input action. Sampel bawaan tetap terbuka.
+- Evidence pack hanya dipublikasikan ke space Confluence yang bisa dilihat user pemanggil (scope baru `read:confluence-content.permission`).
+
 ### Fixed
 - Pull request yang dilaporkan app Bitbucket tidak lagi menyimpan nama author. App Bitbucket berhenti mengirimkannya, dan app Jira mengabaikan field itu dari versi lama. Dengan begitu, app tidak menyimpan data pribadi.
 - Halaman pengaturan TraceGuard for Bitbucket menolak semua admin workspace karena Bitbucket menghapus endpoint `GET /2.0/user/permissions/workspaces`; cek admin kini memakai `GET /2.0/user/workspaces/{workspace}/permission`.

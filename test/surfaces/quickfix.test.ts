@@ -28,7 +28,7 @@ function liveSnapshot(): TraceSnapshot {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  source.value = { snapshot: liveSnapshot(), config: demoConfig, defaultRepo: 'r', simulated: false, projectKey: 'CSM' };
+  source.value = { snapshot: liveSnapshot(), config: demoConfig, defaultRepo: 'r', simulated: false, projectKey: 'CSM', projectId: '10001' };
 });
 
 describe('rankTestCandidates', () => {
@@ -49,9 +49,15 @@ describe('linkTestCase', () => {
   });
 
   it('refuses users without the Link work items permission', async () => {
-    jira.userHasProjectPermissions.mockResolvedValueOnce(false);
+    jira.userHasProjectPermissions.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     await expect(linkTestCase('acc-1', 'REQ-109', 'CSM-26')).rejects.toThrow(/Link work items permission/);
     expect(jira.createLink).not.toHaveBeenCalled();
+  });
+
+  it('refuses users who cannot browse the project before reading anything', async () => {
+    jira.userHasProjectPermissions.mockResolvedValueOnce(false);
+    await expect(getTestCandidates('acc-2', 'REQ-109')).rejects.toThrow(/Browse projects permission in Jira project CSM/);
+    expect(jira.userHasProjectPermissions).toHaveBeenCalledWith('acc-2', '10001', ['BROWSE_PROJECTS']);
   });
 
   it('rejects keys that are not Test Case issues in the project', async () => {
@@ -63,7 +69,7 @@ describe('linkTestCase', () => {
   it('does nothing when the link already exists', async () => {
     const s = liveSnapshot();
     s.testCases.find((t) => t.key === 'CSM-26')!.requirementIds = ['REQ-109'];
-    source.value = { snapshot: s, config: demoConfig, defaultRepo: 'r', simulated: false, projectKey: 'CSM' };
+    source.value = { snapshot: s, config: demoConfig, defaultRepo: 'r', simulated: false, projectKey: 'CSM', projectId: '10001' };
     const r = await linkTestCase('acc-1', 'REQ-109', 'CSM-26');
     expect(r.created).toBe(false);
     expect(jira.createLink).not.toHaveBeenCalled();
@@ -71,6 +77,6 @@ describe('linkTestCase', () => {
 
   it('needs live Jira data', async () => {
     source.value = { snapshot: demoSnapshot, config: demoConfig, defaultRepo: 'r', simulated: true, projectKey: 'CSM' };
-    await expect(getTestCandidates('REQ-109')).rejects.toThrow(/Load demo data/);
+    await expect(getTestCandidates('acc-1', 'REQ-109')).rejects.toThrow(/Load demo data/);
   });
 });
