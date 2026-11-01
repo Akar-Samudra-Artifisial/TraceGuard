@@ -1,0 +1,24 @@
+{
+  "name": "traceguard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Live, audit-ready traceability for regulated software on Atlassian Forge",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "forge lint",
+    "deploy": "forge deploy"
+  },
+  "dependencies": {
+    "@forge/resolver": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

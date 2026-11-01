@@ -1,0 +1,247 @@
+app:
+  id: ari:cloud:ecosystem::app/d762877f-0818-47f7-9ed7-a02c246bd78e
+  runtime:
+    name: nodejs24.x
+  compatibility:
+    jira:
+      required: true
+    confluence:
+      required: false
+
+modules:
+  # --- Jira ---
+  jira:projectPage:
+    - key: traceguard-matrix
+      title: TraceGuard
+      resource: matrix-ui
+      resolver:
+        function: ui-resolver
+  jira:issuePanel:
+    - key: traceguard-chain
+      title: Trace chain
+      icon: resource:icons;traceguard.svg
+      resource: chain-ui
+      resolver:
+        function: ui-resolver
+  jira:adminPage:
+    - key: traceguard-setup
+      title: TraceGuard setup
+      resource: setup-ui
+      resolver:
+        function: ui-resolver
+
+  # --- Confluence ---
+  macro:
+    - key: traceguard-matrix-macro
+      title: Traceability matrix
+      description: Live traceability matrix for a release
+      resource: macro-ui
+      resolver:
+        function: ui-resolver
+
+  # --- Event & background ---
+  trigger:
+    - key: on-work-change
+      function: on-event
+      events:
+        - avi:jira:created:issue
+        - avi:jira:updated:issue
+        - avi:confluence:updated:page
+  consumer:
+    - key: reindex-consumer
+      queue: reindex
+      function: reindex
+  scheduledTrigger:
+    - key: nightly-sweep-schedule
+      function: nightly-sweep
+      interval: day
+
+  # --- Storage ---
+  sql:
+    - key: main
+      engine: mysql
+
+  # --- Rovo ---
+  rovo:agent:
+    - key: audit-prep-agent
+      name: Audit Prep Agent
+      description: Answers audit-readiness questions about regulated releases and
+        prepares traceability evidence.
+      prompt: resource:agent-prompt;prompt.md
+      conversationStarters:
+        - What blocks release 2.3 from being audit-ready?
+        - Show the trace chain for REQ-112
+        - Generate the traceability evidence pack for 2.3
+      actions:
+        - list_gaps
+        - get_trace
+        - generate_evidence_pack
+        - assign_gap
+
+  # One action module serves both the Rovo agent and rovo:mcp.
+  action:
+    - key: list_gaps
+      name: List traceability gaps
+      function: list-gaps
+      actionVerb: GET
+      description: >
+        List open traceability gaps (G1 not implemented, G2 not verified, G3
+        failed test, G4 untraced safety-critical code, G5 stale verification, G6
+        changed after approval) for a Jira fix version, with severity, owner and
+        coverage.
+      inputs:
+        release:
+          title: Release
+          type: string
+          required: false
+          description: Jira fix version name, for example 2.3. Defaults to the next
+            unreleased version.
+        severity:
+          title: Severity
+          type: string
+          required: false
+          description: "Filter by severity: critical, high, medium or low."
+    - key: get_trace
+      name: Get trace chain
+      function: get-trace
+      actionVerb: GET
+      description: >
+        Return the full trace chain (requirement, hazards, stories, pull
+        requests, tests, releases and open gaps) for a requirement ID, Jira
+        issue key, test case key or pull request ID.
+      inputs:
+        key:
+          title: Key
+          type: string
+          required: true
+          description: Requirement ID such as REQ-112, or a Jira issue key such as CSM-41.
+        release:
+          title: Release
+          type: string
+          required: false
+          description: Jira fix version used to evaluate gaps.
+    - key: check_change_impact
+      name: Check change impact
+      function: check-change-impact
+      actionVerb: GET
+      description: >
+        Before editing code, return the requirements, safety class, hazards and
+        tests affected by changing the given files, and whether a traced Jira
+        issue is required.
+      inputs:
+        repo:
+          title: Repository
+          type: string
+          required: false
+          description: Repository slug, for example cardiosense-firmware.
+        files:
+          title: Files
+          type: string
+          required: true
+          description: Comma-separated file paths relative to the repository root.
+    - key: find_requirements_for_path
+      name: Find requirements for path
+      function: find-reqs-for-path
+      actionVerb: GET
+      description: Return requirements and hazards linked to a file or folder in a
+        repository.
+      inputs:
+        repo:
+          title: Repository
+          type: string
+          required: false
+          description: Repository slug.
+        path:
+          title: Path
+          type: string
+          required: true
+          description: File or folder path, for example src/dosing.
+    - key: generate_evidence_pack
+      name: Generate evidence pack
+      function: generate-evidence-pack
+      actionVerb: CREATE
+      description: >
+        Build the traceability evidence pack for a release (matrix, coverage and
+        open gaps) and publish it as a Confluence page.
+      inputs:
+        release:
+          title: Release
+          type: string
+          required: true
+          description: Jira fix version name.
+    - key: assign_gap
+      name: Assign gap
+      function: assign-gap
+      actionVerb: CREATE
+      description: Create a Jira task to close a traceability gap and assign it to its
+        owner.
+      inputs:
+        gapId:
+          title: Gap ID
+          type: string
+          required: true
+          description: Gap ID returned by list_gaps, for example G2:REQ-109.
+        assignee:
+          title: Assignee
+          type: string
+          required: false
+          description: Person to assign. Defaults to the gap owner.
+
+  # --- MCP ---
+  rovo:mcp:
+    - key: traceguard-mcp
+      name: TraceGuard
+      tools:
+        - check_change_impact
+        - find_requirements_for_path
+        - get_trace
+        - list_gaps
+        - generate_evidence_pack
+
+  function:
+    - key: ui-resolver
+      handler: index.uiResolver
+    - key: list-gaps
+      handler: index.listGaps
+    - key: get-trace
+      handler: index.getTrace
+    - key: check-change-impact
+      handler: index.checkChangeImpact
+    - key: find-reqs-for-path
+      handler: index.findRequirementsForPath
+    - key: generate-evidence-pack
+      handler: index.generateEvidencePack
+    - key: assign-gap
+      handler: index.assignGap
+    - key: on-event
+      handler: index.onEvent
+    - key: reindex
+      handler: index.reindex
+    - key: nightly-sweep
+      handler: index.nightlySweep
+
+resources:
+  - key: matrix-ui
+    path: static/matrix/build
+  - key: chain-ui
+    path: static/chain/build
+  - key: setup-ui
+    path: static/setup/build
+  - key: macro-ui
+    path: static/macro/build
+  - key: agent-prompt
+    path: prompts
+  - key: icons
+    path: static/icons
+
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - read:confluence-content.all
+    - read:confluence-content.summary
+    - write:confluence-content
+    - read:graph:issue:jira
+    - read:graph:project:jira
+    - read:graph:page:confluence
+    - read:graph:user:atlassian
