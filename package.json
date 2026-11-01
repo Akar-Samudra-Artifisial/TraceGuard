@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Live, audit-ready traceability for regulated software on Atlassian Forge",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "node": ">=22"
   },
