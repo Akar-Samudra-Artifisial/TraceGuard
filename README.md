@@ -55,7 +55,7 @@ forge deploy -e production && forge install   # choose Bitbucket and the workspa
 | `src/core/` | Gap engine G1–G6, change impact, trace chain, evidence pack (pure, no Forge imports) |
 | `src/adapters/` | Jira REST reader (`jira.ts`, `jira-map.ts`), demo seed (`seed.ts`), KVS settings (`store.ts`), source with fixture fallback (`source.ts`) |
 | `src/surfaces/actions.ts` | Rovo actions, also exposed as MCP tools through `rovo:mcp` |
-| `src/surfaces/ui.ts`, `events.ts` | UI resolver and background stubs |
+| `src/surfaces/ui.ts` | UI resolver |
 | `src/surfaces/webtrigger.ts` | `trace-lookup` web trigger for the Bitbucket merge check |
 | `bitbucket-app/` | TraceGuard for Bitbucket (merge check + workspace settings page) |
 | `ui/src/` | Custom UI views (React): project page, issue panel, admin page, Confluence macro |

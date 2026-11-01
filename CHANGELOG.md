@@ -35,7 +35,7 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 - Panel "Trace chain" bisa dibuka dari issue requirement itu sendiri (dicari lewat issue key maupun ID REQ).
 
 ### Removed
-- Scope Teamwork Graph (`read:graph:issue:jira`, `read:graph:project:jira`, `read:graph:page:confluence`, `read:graph:user:atlassian`) dan database Forge SQL yang tidak pernah dipakai. Instalasi tidak lagi butuh persetujuan scope Graph; admin site harus menyetujui upgrade versi mayor.
+- Scope Teamwork Graph (`read:graph:issue:jira`, `read:graph:project:jira`, `read:graph:page:confluence`, `read:graph:user:atlassian`) database Forge SQL, serta trigger event Jira/Confluence, antrean reindex, dan jadwal harian yang belum melakukan apa pun. Data tetap dibaca live dari Jira setiap kali diminta. Instalasi tidak lagi butuh persetujuan scope Graph; admin site harus menyetujui upgrade versi mayor.
 
 ### Security
 - Data Jira live (halaman proyek, panel Trace chain, macro Confluence, halaman setup, agen Rovo, dan tool MCP) hanya ditampilkan bila user pemanggil punya izin Browse projects di proyek tersebut. Identitas user hanya diambil dari context Forge, tidak pernah dari input action. Sampel bawaan tetap terbuka.
