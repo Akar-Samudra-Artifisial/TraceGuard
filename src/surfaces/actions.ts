@@ -164,3 +164,47 @@ export const assignGap = (payload: ActionPayload) =>
       simulated: true,
     };
   });
+
+/** Data behind the Jira project page and Confluence macro: one row per requirement plus all open gaps. */
+export const getOverview = (payload: ActionPayload) =>
+  run(payload, (src) => {
+    const release = releaseOf(src, payload);
+    const pack = core.buildEvidencePack(src.snapshot, src.config, release);
+    const hazards = Object.fromEntries(src.snapshot.hazards.map((h) => [h.id, h]));
+    return {
+      summary: gapSummary(release, pack.gaps),
+      release,
+      releases: src.snapshot.releases,
+      coverage: pack.coverage,
+      rows: pack.rows.map((row) => ({
+        ...row,
+        hazards: row.hazards.map((id) => hazards[id] ?? { id, title: id, severity: 'minor' as const }),
+        gaps: pack.gaps.filter((g) => g.requirementId === row.requirementId),
+      })),
+      gaps: pack.gaps,
+      untracedChanges: pack.gaps.filter((g) => !g.requirementId),
+      simulated: src.simulated,
+    };
+  });
+
+/** Data behind the Jira admin page: what TraceGuard reads and how it classifies code. */
+export const getSetupInfo = (payload: ActionPayload) =>
+  run(payload, (src) => {
+    const s = src.snapshot;
+    return {
+      summary: `TraceGuard reads ${s.requirements.length} requirements across ${s.releases.length} releases.`,
+      dataSource: src.simulated ? 'demo' : 'live',
+      defaultRepo: src.defaultRepo,
+      safetyCriticalPaths: src.config.safetyCriticalPaths,
+      releases: s.releases,
+      counts: {
+        requirements: s.requirements.length,
+        hazards: s.hazards.length,
+        workItems: s.workItems.length,
+        testCases: s.testCases.length,
+        pullRequests: s.pullRequests.length,
+      },
+      requirementPaths: s.requirements.map((r) => ({ id: r.id, safetyClass: r.safetyClass, paths: r.paths })),
+      simulated: src.simulated,
+    };
+  });

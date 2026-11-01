@@ -1,0 +1,149 @@
+import { useEffect, useState } from 'react';
+import { mount } from './mount';
+import { appIdFrom, getContext, useRemote } from './bridge';
+import { ClassBadge, ErrorState, Key, Loading, Masthead, Shell, SimulatedNote } from './components';
+import type { SetupInfo } from './types';
+
+const COUNT_LABEL: Record<keyof SetupInfo['counts'], string> = {
+  requirements: 'Requirements',
+  hazards: 'Hazards',
+  workItems: 'Work items',
+  testCases: 'Test cases',
+  pullRequests: 'Pull requests',
+};
+
+function CopyField({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="copy">
+      <code>{value}</code>
+      <button
+        type="button"
+        className="btn"
+        onClick={() => {
+          void navigator.clipboard?.writeText(value).then(
+            () => setCopied(true),
+            () => setCopied(false),
+          );
+        }}
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  );
+}
+
+function App() {
+  const setup = useRemote<SetupInfo>('getSetup', {}, []);
+  const [appId, setAppId] = useState<string>();
+  useEffect(() => {
+    void getContext().then((c) => setAppId(appIdFrom(c.localId)));
+  }, []);
+  const data = setup.data;
+  const mcpUrl = `https://mcp.atlassian.com/forge/${appId ?? '<app-id>'}`;
+
+  return (
+    <Shell>
+      <Masthead eyebrow="TraceGuard · setup" title="Sources and agent access" />
+      {setup.loading && !data && <Loading />}
+      {setup.error && <ErrorState message={setup.error} onRetry={setup.reload} />}
+      {data && (
+        <>
+          <SimulatedNote show={data.simulated} />
+          <section className="panel" aria-labelledby="source-title">
+            <div className="panel__bar">
+              <h2 id="source-title" className="panel__title">
+                Data source
+              </h2>
+              <span className={data.dataSource === 'demo' ? 'status status--demo' : 'status status--ok'}>
+                {data.dataSource === 'demo' ? 'Demo dataset' : 'Live'}
+              </span>
+            </div>
+            <dl className="stats">
+              {(Object.keys(COUNT_LABEL) as (keyof SetupInfo['counts'])[]).map((k) => (
+                <div key={k} className="stat">
+                  <dt>{COUNT_LABEL[k]}</dt>
+                  <dd>{data.counts[k]}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="muted">
+              Repository <Key>{data.defaultRepo}</Key> · releases{' '}
+              {data.releases.map((r) => `${r.name}${r.signedOff ? ' (signed off)' : ''}`).join(', ')}
+            </p>
+          </section>
+
+          <div className="layout layout--even">
+            <section className="panel" aria-labelledby="critical-title">
+              <h2 id="critical-title" className="panel__title">
+                Safety-critical paths
+              </h2>
+              <p className="panel__lede">A pull request touching these must trace to a requirement (gap G4).</p>
+              <ul className="paths">
+                {data.safetyCriticalPaths.map((p) => (
+                  <li key={p}>
+                    <code>{p}</code>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="panel" aria-labelledby="map-title">
+              <h2 id="map-title" className="panel__title">
+                Requirement → code
+              </h2>
+              <p className="panel__lede">From the SRS table. Used by change impact and coding agents.</p>
+              <table className="map">
+                <tbody>
+                  {data.requirementPaths.map((r) => (
+                    <tr key={r.id}>
+                      <th scope="row">
+                        <Key>{r.id}</Key>
+                      </th>
+                      <td>
+                        <ClassBadge value={r.safetyClass} />
+                      </td>
+                      <td>
+                        {r.paths.map((p) => (
+                          <code key={p} className="path">
+                            {p}
+                          </code>
+                        ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          </div>
+
+          <section className="panel" aria-labelledby="mcp-title">
+            <h2 id="mcp-title" className="panel__title">
+              Connect a coding agent (MCP)
+            </h2>
+            <p className="panel__lede">
+              Claude Code, Cursor and other MCP clients can ask TraceGuard what a change affects before they edit
+              safety-critical code.
+            </p>
+            <ol className="howto">
+              <li>
+                In Atlassian Administration → Apps → Sites → this site → <strong>Connected apps</strong> → TraceGuard,
+                turn on <strong>Expose tools to MCP-compatible apps</strong>. Turn it on while TraceGuard is connected to
+                Jira only, then connect Confluence.
+              </li>
+              <li>
+                Add the remote MCP server:
+                <CopyField value={mcpUrl} />
+                <CopyField value={`claude mcp add --transport http traceguard ${mcpUrl}`} />
+              </li>
+              <li>
+                Authenticate, then ask: <em>“Use check_change_impact for src/dosing/limits.ts before editing.”</em>
+              </li>
+            </ol>
+          </section>
+        </>
+      )}
+    </Shell>
+  );
+}
+
+mount(<App />);

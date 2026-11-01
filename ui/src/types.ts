@@ -1,0 +1,43 @@
+import type { Coverage, Gap, GapCode, Hazard, Release, SafetyClass, Severity } from '../../src/core';
+import type { ChangeImpact, TraceResult } from '../../src/core';
+
+export type { ChangeImpact, Coverage, Gap, GapCode, Hazard, Release, SafetyClass, Severity, TraceResult };
+
+export type TestResult = 'passed' | 'failed' | 'not-run';
+
+export interface MatrixRow {
+  requirementId: string;
+  title: string;
+  safetyClass: SafetyClass;
+  hazards: Hazard[];
+  workItems: string[];
+  pullRequests: string[];
+  tests: { key: string; result: TestResult }[];
+  status: 'traced' | 'gap';
+  gaps: Gap[];
+}
+
+export interface Overview {
+  summary: string;
+  release: string;
+  releases: Release[];
+  coverage: Coverage;
+  rows: MatrixRow[];
+  gaps: Gap[];
+  untracedChanges: Gap[];
+  simulated: boolean;
+}
+
+export interface SetupInfo {
+  summary: string;
+  dataSource: 'demo' | 'live';
+  defaultRepo: string;
+  safetyCriticalPaths: string[];
+  releases: Release[];
+  counts: Record<'requirements' | 'hazards' | 'workItems' | 'testCases' | 'pullRequests', number>;
+  requirementPaths: { id: string; safetyClass: SafetyClass; paths: string[] }[];
+  simulated: boolean;
+}
+
+export type TraceView = TraceResult & { summary: string; simulated: boolean };
+export type ImpactView = ChangeImpact & { summary: string; repo: string; simulated: boolean };
