@@ -56,11 +56,6 @@ modules:
       function: nightly-sweep
       interval: day
 
-  # --- Storage ---
-  sql:
-    - key: main
-      engine: mysql
-
   # --- Rovo ---
   rovo:agent:
     - key: audit-prep-agent
@@ -264,7 +259,3 @@ permissions:
     - read:space:confluence      # evidence pack: find the target space (v2 API)
     - write:page:confluence      # evidence pack: create the page (v2 API)
     - write:confluence-space     # demo seed: create the CSM evidence space
-    - read:graph:issue:jira
-    - read:graph:project:jira
-    - read:graph:page:confluence
-    - read:graph:user:atlassian

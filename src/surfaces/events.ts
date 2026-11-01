@@ -1,4 +1,4 @@
-// Spike stage: background handlers only log. The indexer (Jira/Confluence -> Forge SQL) comes next.
+// Background handlers only log for now; TraceGuard reads Jira live on every request.
 
 interface ProductEvent {
   eventType?: string;

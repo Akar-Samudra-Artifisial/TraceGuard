@@ -82,7 +82,7 @@ forge register          # replaces the placeholder app.id in manifest.yml
 forge lint
 npm run build:ui
 forge deploy
-forge install           # choose Jira, then your developer site (org admin needed for read:graph scopes)
+forge install           # choose Jira, then your developer site
 ```
 
 Spike D: open Rovo chat in Jira, pick **Audit Prep Agent**, ask "What blocks release 2.3 from being audit-ready?". Expected: 6 gaps (1 critical, 3 high, 2 medium).

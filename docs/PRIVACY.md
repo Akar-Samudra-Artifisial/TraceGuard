@@ -30,7 +30,6 @@ Within the site or workspace where they are installed, and only as far as the pe
   - Jira issues, projects, fix versions and links (`read:jira-work`)
   - Assignable users, to assign a gap task (`read:jira-user`)
   - Confluence spaces and pages (`read:confluence-content.*`, `read:space:confluence`)
-  - Teamwork Graph relationships (`read:graph:*`)
 - **Bitbucket app:**
   - Pull requests, their commits and changed files
   - The `.traceguard.yml` file in the repository (`read:pullrequest`, `read:repository`)
