@@ -50,3 +50,14 @@ describe('validateConnection', () => {
     expect(() => validateConnection('https://abc.webtrigger.atlassian.app/x', 'short')).toThrow('tgs_');
   });
 });
+
+describe('workspaceUuid', async () => {
+  const { workspaceUuid } = await import('../src/index');
+  it('normalises bare, braced and ARI workspace ids', () => {
+    const id = '9c5c60f7-f4ba-4783-ba87-8a12b5f1473e';
+    expect(workspaceUuid(id)).toBe(`{${id}}`);
+    expect(workspaceUuid(`{${id.toUpperCase()}}`)).toBe(`{${id}}`);
+    expect(workspaceUuid(`ari:cloud:bitbucket::workspace/${id}`)).toBe(`{${id}}`);
+    expect(workspaceUuid(undefined)).toBeUndefined();
+  });
+});
