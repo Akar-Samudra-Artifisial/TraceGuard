@@ -1,6 +1,70 @@
-# TraceGuard: Devpost submission draft
+# TraceGuard: Devpost submission
 
-Draft of the Codegeist 2026 submission text. Sections other than installation and testing are still to be written.
+**Tagline:** TraceGuard turns your existing Jira, Confluence and Bitbucket work into a live, audit-ready traceability matrix, and stops untraced changes to safety-critical code before they merge.
+
+## Inspiration
+
+Teams that build medical, automotive or industrial software must prove, for every release, that each requirement is implemented, verified by a passing test and linked to the hazards it controls (IEC 62304, ISO 26262, ISO 13485). In practice that proof is a spreadsheet rebuilt by hand before each audit. It is out of date the day after it is finished, and nobody notices when a developer changes dosing code without a ticket until an auditor does. We wanted the trace to live where the work already happens and to be enforced at the moment a change is made.
+
+## What it does
+
+TraceGuard reads the requirement → hazard → story → test → pull request chain directly from Jira and keeps it current for every release (fix version).
+
+- **Project page "TraceGuard" in Jira**: coverage score per release, a traceability matrix and a list of gaps sorted by severity. Six gap types are detected: G1 requirement not implemented, G2 not verified, G3 failed test, G4 untraced change to safety-critical code, G5 verification older than the last change, G6 requirement edited after approval.
+- **Issue panel "Trace chain"**: the full chain of the open issue, with a one-click *Link test case* fix for missing verification.
+- **Audit Prep Agent (Rovo)**: answers "What blocks release 2.3 from being audit-ready?", groups gaps by severity and owner, assigns a gap as a real Jira task, and publishes an evidence pack (summary, open gaps, matrix) as a Confluence page. Every write asks for confirmation first.
+- **MCP server (Rovo MCP)**: the same tools (`check_change_impact`, `find_requirements_for_path`, `get_trace`, `list_gaps`, `generate_evidence_pack`) are available to coding agents such as Claude Code or Cursor, so an agent can ask "which requirements and tests does `src/dosing/limits.ts` affect?" before it edits the file.
+- **Confluence macro "Traceability matrix"** for quality documents.
+- **TraceGuard for Bitbucket**: a custom merge check. A pull request that changes safety-critical code must reference a Jira issue traced to every affected requirement. Otherwise the check fails and names the requirement, its hazard, an issue to reference and the tests to re-run. Merged pull requests that pass are recorded as trace history in Jira.
+- **Load demo data**: one button creates a realistic CardioSense Monitor project (8 requirements, 3 hazards, 7 stories, 9 test cases, two releases) so judges can try everything in minutes.
+
+TraceGuard reports evidence; it does not certify compliance.
+
+## How we built it
+
+- Two Atlassian Forge apps: one for Jira + Confluence, one for Bitbucket (a Forge app cannot span Bitbucket and Jira). Both are TypeScript on the Node.js 24 runtime.
+- Traceability lives in Jira itself: issue types Requirement, Hazard and Test Case, link types Implements / Verifies / Mitigates, a `traceguard` issue property for attributes such as safety class and last test run, and fix versions as releases. No external database.
+- A pure core (`src/core`: gap engine, change impact, glob matching, merge-check decision) is shared by every surface and covered by unit tests (96 tests in the Jira app, 12 in the Bitbucket app).
+- Surfaces: Custom UI (React) for the project page, issue panel, admin page and macro; Rovo agent + six actions; Rovo MCP module exposing five of those actions; Jira triggers and a scheduled trigger.
+- The Bitbucket app reads the pull request diffstat, title, branch and commits plus an optional `.traceguard.yml`, then calls a web trigger in the Jira app. Requests are signed with HMAC-SHA256 and a shared secret that a Jira admin creates in TraceGuard setup and a Bitbucket workspace admin pastes into workspace settings. The check fails closed.
+- Data is read as the app, but every surface first checks the calling user's own permissions (Browse projects in Jira, read access to the Confluence space), so TraceGuard never shows a user more than Jira or Confluence would.
+
+## Challenges we ran into
+
+- **Bitbucket to Jira.** Forge apps cannot call each other, so the merge check needed a signed web trigger, replay protection (timestamped signatures, 5-minute window) and a secret rotation flow. The trade-off is that a dynamic web trigger means neither app qualifies for "Runs on Atlassian"; we chose a merge check that knows the real requirements over a self-contained one that duplicates them.
+- **Bitbucket API drift.** The endpoint we first used to check workspace admin rights had been removed, so the settings page rejected every admin. We switched to the current workspace permission endpoint after testing on a real workspace.
+- **UI Kit typings.** `@forge/react` 12 ships React 18 typings; with React 19 every component prop became required and the Forge bundler refused to build. Pinning React 18 fixed it.
+- **Scopes.** Confluence v2 APIs reject classic scopes, and each new scope or the web trigger forces a major version upgrade on every site, so we had to plan scope changes carefully.
+- **Keeping the agent honest.** Early Rovo answers invented links to issues and pull requests. The prompt now allows only URLs returned by an action, and every action result says when it is based on sample data.
+- **Real writes from an agent.** `assign_gap` creates a Jira task, so it checks the user's create/assign permissions, avoids duplicates for the same gap and asks for an assignee instead of guessing.
+
+## Accomplishments that we're proud of
+
+- The demo path is fully real: from *Load demo data* to the gap list, the Rovo answer, the Confluence evidence pack, the MCP answer in Claude Code and the Bitbucket merge check, all read the same Jira project.
+- A blocked pull request tells the developer exactly how to fix it (which story to reference and which tests to re-run), not just "failed".
+- Installation was tested from scratch on a clean site and a non-Premium Bitbucket workspace by following the judge instructions below.
+
+## What we learned
+
+- Regulated teams already have most of the trace data in Jira; the missing piece is checking it continuously and at the point of change.
+- Forge's permission model rewards designing scopes and data flows up front.
+- Agent features need the same guardrails as an API: confirmation before writes, permission checks per user and answers grounded only in tool results.
+
+## What's next for TraceGuard
+
+- Read Bitbucket and Confluence context through Teamwork Graph instead of app storage.
+- Configurable requirement and hazard issue types, so existing projects work without the demo schema.
+- Signed, versioned evidence pack baselines per release and an export for auditors.
+- Marketplace listing.
+
+## Built with
+
+Atlassian Forge, Jira, Confluence, Bitbucket, Rovo agents and actions, Rovo MCP, Forge Custom UI, Forge UI Kit, Forge KVS, web triggers, TypeScript, React, Node.js, Vitest.
+
+## Links
+
+- Source code: https://github.com/Akar-Samudra-Artifisial/TraceGuard (MIT)
+- Video: _to be added_
 
 ## Installation links
 
