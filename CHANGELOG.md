@@ -26,6 +26,7 @@ Semua perubahan penting dicatat di sini. Format mengikuti Keep a Changelog, vers
 - Tombol "Load demo data" di TraceGuard setup (khusus admin Jira) membuat proyek CardioSense `CSM` sebagai issue Jira asli, lengkap dengan satu contoh celah G1–G6. Riwayat pull request disimpan sebagai data simulasi.
 
 ### Changed
+- README diperluas: alasan produk, fitur per surface, galeri screenshot (`docs/images/`), diagram arsitektur dan alur dalam Mermaid, serta daftar isi.
 - Scope baru `read:jira-user` untuk mencari assignee `assign_gap`. Admin site harus menyetujui upgrade versi mayor.
 - App Jira kini memakai web trigger dinamis, sehingga tidak lagi memenuhi syarat Runs on Atlassian. Admin site harus menyetujui upgrade versi mayor.
 - Scope baru `read:space:confluence`, `write:page:confluence`, dan `write:confluence-space`. Admin site harus menyetujui upgrade versi mayor.
