@@ -76,7 +76,7 @@ All screenshots are taken from the deployed apps on a live Atlassian site with t
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph JC["TraceGuard for Jira + Confluence (Forge app)"]
     UI["Custom UI: project page, issue panel, admin page, macro"]
     ACT["Forge actions (6)"]
