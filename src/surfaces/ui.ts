@@ -1,5 +1,7 @@
 import Resolver from '@forge/resolver';
 import { route, webTrigger } from '@forge/api';
+import { ConfluenceError } from '../adapters/confluence';
+import { ensureEvidenceSpace, SpaceSetupError } from '../adapters/evidence-space';
 import { jira } from '../adapters/jira';
 import { seedDemoProject } from '../adapters/seed';
 import { newSecret } from '../adapters/signature';
@@ -59,6 +61,24 @@ resolver.define('seedDemo', async ({ context }) => {
   } catch (err) {
     console.error('TraceGuard demo seed failed', err);
     return { error: err instanceof Error ? err.message : 'Loading demo data failed. Check the app logs.' };
+  }
+});
+
+/**
+ * Creates the Confluence space for evidence packs when the project already exists, e.g. because
+ * Confluence was added to the site after the demo was loaded. Only from the admin page, for Jira admins.
+ */
+resolver.define('createConfluenceSpace', async ({ context }) => {
+  const ctx = context as ResolverContext;
+  if (ctx.moduleKey !== SETUP_MODULE || !ctx.accountId) return { error: 'The Confluence space can only be created from TraceGuard setup.' };
+  try {
+    if (!(await isJiraAdmin(ctx.accountId))) return { error: 'Only Jira administrators can create the Confluence space.' };
+    return await ensureEvidenceSpace();
+  } catch (err) {
+    if (err instanceof SpaceSetupError) return { error: err.message };
+    if (err instanceof ConfluenceError) return { error: `Confluence refused to create the space (${err.message}).` };
+    console.error('TraceGuard createConfluenceSpace failed', err);
+    return { error: 'Creating the Confluence space failed. Check the app logs.' };
   }
 });
 

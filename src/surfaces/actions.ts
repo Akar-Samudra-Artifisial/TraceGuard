@@ -1,5 +1,6 @@
 import * as core from '../core';
 import { ConfluenceError, createPage, findSpace } from '../adapters/confluence';
+import { evidenceSpaceStatus } from '../adapters/evidence-space';
 import { loadTraceSource, type TraceSource } from '../adapters/source';
 import { getBitbucketSecret, getSettings } from '../adapters/store';
 import { AccessError, accountOf, assertCanBrowse, assertCanUseSpace, type InvocationContext } from './access';
@@ -257,6 +258,8 @@ export const getSetupInfo = (payload: ActionPayload, context?: InvocationContext
   run(payload, context, async (src) => {
     const s = src.snapshot;
     const bitbucketConnected = Boolean(await getBitbucketSecret());
+    // Only for a live project: before that, Load demo data creates the space together with the project.
+    const confluence = !src.simulated && src.projectKey ? await evidenceSpaceStatus(src.projectKey) : null;
     return {
       summary: `TraceGuard reads ${s.requirements.length} requirements across ${s.releases.length} releases.`,
       dataSource: src.simulated ? 'demo' : 'live',
@@ -274,6 +277,7 @@ export const getSetupInfo = (payload: ActionPayload, context?: InvocationContext
         bitbucketPullRequests: s.pullRequests.filter((pr) => !pr.simulated).length,
       },
       bitbucketConnected,
+      confluence,
       requirementPaths: s.requirements.map((r) => ({ id: r.id, safetyClass: r.safetyClass, paths: r.paths })),
       simulated: src.simulated,
     };

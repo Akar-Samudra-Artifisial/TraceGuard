@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { mount } from './mount';
 import { appIdFrom, call, getContext, useRemote } from './bridge';
 import { ClassBadge, ErrorState, Key, Loading, Masthead, Shell } from './components';
-import type { BitbucketConnection, SeedResult, SetupInfo } from './types';
+import type { BitbucketConnection, SeedResult, SetupInfo, SpaceResult } from './types';
 
 const COUNT_LABEL: Record<Exclude<keyof SetupInfo['counts'], 'bitbucketPullRequests'>, string> = {
   requirements: 'Requirements',
@@ -64,9 +64,52 @@ function LoadDemo({ reason, onDone }: { reason: string | null; onDone: () => voi
       {state.result && (
         <p className="empty">
           {state.result.summary} {state.result.created.links} links created. Open project {state.result.projectKey} →
-          Apps → TraceGuard.
+          TraceGuard tab (under More when hidden).
         </p>
       )}
+    </section>
+  );
+}
+
+/** Shown when the project exists but its evidence-pack space does not (Confluence added after the demo). */
+function CreateSpace({ status, onDone }: { status: NonNullable<SetupInfo['confluence']>; onDone: () => void }) {
+  const [state, setState] = useState<{ busy: boolean; result?: SpaceResult; error?: string }>({ busy: false });
+  const run = async () => {
+    setState({ busy: true });
+    try {
+      const result = await call<SpaceResult>('createConfluenceSpace');
+      setState({ busy: false, result });
+      onDone();
+    } catch (e) {
+      setState({ busy: false, error: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  return (
+    <section className="panel seed" aria-labelledby="space-title">
+      <h2 id="space-title" className="panel__title">
+        Create Confluence space
+      </h2>
+      {status.error ? (
+        <p className="state state--error">{status.error}</p>
+      ) : status.available ? (
+        <>
+          <p className="panel__lede">
+            Confluence space <Key>{status.spaceKey}</Key> does not exist yet. Publish evidence pack needs it.
+          </p>
+          <div>
+            <button type="button" className="btn btn--primary" onClick={() => void run()} disabled={state.busy}>
+              {state.busy ? `Creating space ${status.spaceKey}…` : 'Create Confluence space'}
+            </button>
+          </div>
+        </>
+      ) : (
+        <p className="panel__lede">
+          Confluence is not installed for TraceGuard. Add Confluence to this site, then reinstall TraceGuard from the
+          install link.
+        </p>
+      )}
+      {state.error && <p className="state state--error">{state.error}</p>}
+      {state.result && <p className="empty">{state.result.summary}</p>}
     </section>
   );
 }
@@ -149,6 +192,7 @@ function App() {
       {data && (
         <>
           {data.dataSource === 'demo' && <LoadDemo reason={data.fallbackReason} onDone={setup.reload} />}
+          {data.confluence && !data.confluence.exists && <CreateSpace status={data.confluence} onDone={setup.reload} />}
           <section className="panel" aria-labelledby="source-title">
             <div className="panel__bar">
               <h2 id="source-title" className="panel__title">

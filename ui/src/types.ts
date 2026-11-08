@@ -43,6 +43,8 @@ export interface SetupInfo {
     bitbucketPullRequests: number;
   };
   bitbucketConnected: boolean;
+  /** Evidence-pack space of the live project; null while the built-in sample is shown. */
+  confluence: { available: boolean; spaceKey: string; exists: boolean; error: string | null } | null;
   requirementPaths: { id: string; safetyClass: SafetyClass; paths: string[] }[];
   simulated: boolean;
 }
@@ -64,6 +66,12 @@ export interface SeedResult {
   summary: string;
   projectKey: string;
   created: Record<'requirements' | 'hazards' | 'workItems' | 'testCases' | 'links', number>;
+}
+
+export interface SpaceResult {
+  summary: string;
+  spaceKey: string;
+  created: boolean;
 }
 
 export interface TestCandidates {

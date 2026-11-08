@@ -56,7 +56,7 @@ function App() {
           <Text>
             {status.connected
               ? `Connected to ${status.host}${status.connectedAt ? ` since ${status.connectedAt.slice(0, 10)}` : ''}.`
-              : 'Not connected. In Jira, open Apps → TraceGuard setup → Connect Bitbucket → Create connection.'}
+              : 'Not connected. In Jira, open Settings → Marketplace apps → TraceGuard setup → Connect Bitbucket → Create connection.'}
           </Text>
         </SectionMessage>
       )}

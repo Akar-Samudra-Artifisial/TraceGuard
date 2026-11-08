@@ -1,7 +1,7 @@
 import { route } from '@forge/api';
 import type { PullRequest } from '../core/types';
 import { DEMO_REPO, demoConfig, demoSnapshot } from '../demo/cardiosense';
-import { ensureSpace } from './confluence';
+import { createDemoSpace } from './evidence-space';
 import { createLink as link, getProject, jira, searchProjectIssues, type JiraProject } from './jira';
 import { ISSUE_TYPES, LINK_TYPES, PROPERTY_KEY } from './jira-map';
 import { DEFAULT_PROJECT_KEY } from './source';
@@ -270,11 +270,7 @@ export async function seedDemoProject(accountId: string): Promise<SeedResult> {
   // Best effort: Confluence is optional for TraceGuard, so the Jira demo still works without it.
   let confluenceSpace: string | null = null;
   try {
-    confluenceSpace = await ensureSpace(
-      project.key,
-      `${PROJECT_NAME} Quality`,
-      'Traceability evidence packs published by TraceGuard. Demo data.',
-    );
+    confluenceSpace = await createDemoSpace(project.key);
   } catch (err) {
     console.warn('TraceGuard demo: Confluence space not created', err);
   }
