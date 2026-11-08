@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { mount } from './mount';
 import { appIdFrom, call, getContext, useRemote } from './bridge';
 import { ClassBadge, ErrorState, Key, Loading, Masthead, Shell } from './components';
@@ -72,16 +72,21 @@ function LoadDemo({ reason, onDone }: { reason: string | null; onDone: () => voi
 }
 
 /** Shown when the project exists but its evidence-pack space does not (Confluence added after the demo). */
-function CreateSpace({ status, onDone }: { status: NonNullable<SetupInfo['confluence']>; onDone: () => void }) {
-  const [state, setState] = useState<{ busy: boolean; result?: SpaceResult; error?: string }>({ busy: false });
+function CreateSpace({ status, onDone }: { status: NonNullable<SetupInfo['confluence']>; onDone: (result: SpaceResult) => void }) {
+  const [state, setState] = useState<{ busy: boolean; error?: string }>({ busy: false });
+  // Blocks a second click that lands before the disabled button re-renders.
+  const busy = useRef(false);
   const run = async () => {
+    if (busy.current) return;
+    busy.current = true;
     setState({ busy: true });
     try {
       const result = await call<SpaceResult>('createConfluenceSpace');
-      setState({ busy: false, result });
-      onDone();
+      onDone(result);
     } catch (e) {
       setState({ busy: false, error: e instanceof Error ? e.message : String(e) });
+    } finally {
+      busy.current = false;
     }
   };
   return (
@@ -109,7 +114,6 @@ function CreateSpace({ status, onDone }: { status: NonNullable<SetupInfo['conflu
         </p>
       )}
       {state.error && <p className="state state--error">{state.error}</p>}
-      {state.result && <p className="empty">{state.result.summary}</p>}
     </section>
   );
 }
@@ -178,6 +182,9 @@ function ConnectBitbucket({ connected, reported }: { connected: boolean; reporte
 function App() {
   const setup = useRemote<SetupInfo>('getSetup', {}, []);
   const [appId, setAppId] = useState<string>();
+  // Replaces the Create Confluence space panel once the space exists. Not refetched: Confluence
+  // can list a new space a moment later, and the panel must not come back in the meantime.
+  const [spaceResult, setSpaceResult] = useState<SpaceResult>();
   useEffect(() => {
     void getContext().then((c) => setAppId(appIdFrom(c.localId)));
   }, []);
@@ -192,7 +199,14 @@ function App() {
       {data && (
         <>
           {data.dataSource === 'demo' && <LoadDemo reason={data.fallbackReason} onDone={setup.reload} />}
-          {data.confluence && !data.confluence.exists && <CreateSpace status={data.confluence} onDone={setup.reload} />}
+          {spaceResult ? (
+            <section className="panel" role="status">
+              <p className="empty">{spaceResult.summary}</p>
+            </section>
+          ) : (
+            data.confluence &&
+            !data.confluence.exists && <CreateSpace status={data.confluence} onDone={setSpaceResult} />
+          )}
           <section className="panel" aria-labelledby="source-title">
             <div className="panel__bar">
               <h2 id="source-title" className="panel__title">
